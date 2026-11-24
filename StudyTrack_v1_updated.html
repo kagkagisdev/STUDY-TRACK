@@ -1,0 +1,3108 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyTrack THPT — Sổ Điểm & Lộ Trình Học Tập</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    /* Theme Variables (Default = Theme 1: #FFDBBB, #CCBEB1, #997E67, #664930) */
+    :root {
+      --bg: #FAF5F0;
+      --card: #FFFFFF;
+      --surface-soft: #FFDBBB;
+      --surface-muted: #F2E8DF;
+      --border: #CCBEB1;
+      --primary: #664930;
+      --primary-hover: #523924;
+      --accent: #997E67;
+      --sidebar-bg: #664930;
+      --sidebar-text: #FFDBBB;
+      --sidebar-active-bg: #FFDBBB;
+      --sidebar-active-text: #664930;
+      --text: #362415;
+      --muted: #7D6450;
+
+      --success: #15803d;
+      --success-bg: #dcfce7;
+      --warning: #b45309;
+      --warning-bg: #fef3c7;
+      --danger: #b91c1c;
+      --danger-bg: #fee2e2;
+
+      --radius: 16px;
+      --shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+      --sidebar-w: 256px;
+    }
+
+    /* Theme 2: #C1C0C2, #F5E9E7, #837D68, #8A9DB1, #ECC5C6 */
+    [data-theme="theme2"] {
+      --bg: #F5E9E7;
+      --card: #FFFFFF;
+      --surface-soft: #ECC5C6;
+      --surface-muted: #EDE4E3;
+      --border: #C1C0C2;
+      --primary: #8A9DB1;
+      --primary-hover: #71859B;
+      --accent: #837D68;
+      --sidebar-bg: #837D68;
+      --sidebar-text: #F5E9E7;
+      --sidebar-active-bg: #ECC5C6;
+      --sidebar-active-text: #3A362C;
+      --text: #2F2C28;
+      --muted: #6E6A5C;
+    }
+
+    /* Theme 3: #7B9669, #E6E6E6, #6C8480, #BAC8B1, #404E3B */
+    [data-theme="theme3"] {
+      --bg: #E6E6E6;
+      --card: #FFFFFF;
+      --surface-soft: #BAC8B1;
+      --surface-muted: #DCE4D8;
+      --border: #BAC8B1;
+      --primary: #7B9669;
+      --primary-hover: #647C54;
+      --accent: #6C8480;
+      --sidebar-bg: #404E3B;
+      --sidebar-text: #E6E6E6;
+      --sidebar-active-bg: #BAC8B1;
+      --sidebar-active-text: #283324;
+      --text: #263022;
+      --muted: #566862;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+
+    /* Left Sidebar */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--sidebar-bg);
+      color: var(--sidebar-text);
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 14px;
+      transition: transform 0.25s ease, background 0.25s ease;
+      box-shadow: 4px 0 20px rgba(0,0,0,0.08);
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.16);
+      margin-bottom: 16px;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
+      background: var(--sidebar-active-bg);
+      color: var(--sidebar-active-text);
+      display: grid;
+      place-items: center;
+      font-size: 1.2rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .brand-text h2 {
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    .brand-text span {
+      font-size: 0.74rem;
+      opacity: 0.82;
+    }
+
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .nav-item {
+      border: none;
+      background: transparent;
+      color: var(--sidebar-text);
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 0.94rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      text-align: left;
+      transition: all 0.18s ease;
+      opacity: 0.9;
+    }
+
+    .nav-item:hover {
+      background: rgba(255,255,255,0.12);
+      opacity: 1;
+    }
+
+    .nav-item.active {
+      background: var(--sidebar-active-bg);
+      color: var(--sidebar-active-text);
+      opacity: 1;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+
+    .sidebar-footer .year-switcher-mini { display:none; }
+    .sidebar-footer {
+      padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,0.15);
+      font-size: 0.78rem;
+      opacity: 0.85;
+    }
+
+    .year-switcher-mini {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      margin-top: 8px;
+    }
+
+    .year-mini-btn {
+      border: 1px solid rgba(255,255,255,0.28);
+      background: transparent;
+      color: var(--sidebar-text);
+      padding: 6px 4px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .year-mini-btn.active {
+      background: var(--sidebar-active-bg);
+      color: var(--sidebar-active-text);
+      border-color: var(--sidebar-active-bg);
+    }
+
+    /* Main Content Wrapper */
+    .main-wrap {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 90px;
+    }
+
+    /* Top Header inside Main */
+    .top-header {
+      position: sticky;
+      top: 0;
+      z-index: 300;
+      background: rgba(255,255,255,0.78);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .menu-toggle {
+      display: none;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    .page-title-bar {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .user-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      padding: 5px 14px 5px 6px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      color: var(--text);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .user-pill-btn:hover {
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 0.88rem;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .user-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .user-pill-meta {
+      text-align: left;
+      line-height: 1.2;
+    }
+
+    .user-pill-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: block;
+    }
+
+    .user-pill-class {
+      font-size: 0.74rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .content-area {
+      padding: 22px 24px;
+      max-width: 1220px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Welcome Hero Banner (Home) */
+    .welcome-hero {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      color: #fff;
+      border-radius: 24px;
+      padding: 28px 30px;
+      margin-bottom: 22px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .welcome-hero h1 {
+      font-size: 1.7rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .welcome-hero p {
+      margin-top: 6px;
+      font-size: 0.94rem;
+      opacity: 0.92;
+    }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .hero-badge {
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(6px);
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    /* Generic Card */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+
+    .card-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 1.08rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+    }
+
+    /* 3 Alert Tier Cards on Home */
+    .tiers-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .tier-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px;
+      border: 1.5px solid var(--border);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tier-card.danger { border-top: 5px solid #dc2626; }
+    .tier-card.warn { border-top: 5px solid #d97706; }
+    .tier-card.good { border-top: 5px solid #16a34a; }
+
+    .tier-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tier-title {
+      font-weight: 800;
+      font-size: 0.96rem;
+    }
+
+    .tier-rule {
+      font-size: 0.76rem;
+      color: var(--muted);
+      font-weight: 600;
+      background: var(--surface-muted);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .tier-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tier-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 11px;
+      background: var(--bg);
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .tier-empty {
+      font-size: 0.84rem;
+      color: var(--muted);
+      font-style: italic;
+      padding: 8px 0;
+    }
+
+    /* Fluctuation Bars */
+    .fluc-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+    }
+
+    .fluc-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    .fluc-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .fluc-name {
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+
+    .fluc-pct {
+      font-weight: 800;
+      font-size: 0.86rem;
+    }
+
+    .fluc-track {
+      width: 100%;
+      height: 11px;
+      background: rgba(0,0,0,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .fluc-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.4s ease, background 0.3s ease;
+    }
+
+    .fluc-meta {
+      margin-top: 6px;
+      font-size: 0.76rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    /* Rank & Target Box */
+    .rank-summary-box {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .rank-status-card {
+      background: var(--surface-muted);
+      border-radius: 14px;
+      padding: 18px;
+      border: 1px solid var(--border);
+    }
+
+    .rank-big {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin: 6px 0;
+    }
+
+    .advice-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 18px;
+    }
+
+    .advice-list {
+      margin-top: 8px;
+      padding-left: 18px;
+      font-size: 0.88rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .subjects-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+      gap: 10px;
+    }
+
+    .sub-mini-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    /* Buttons & Inputs */
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 9px 15px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: all 0.16s ease;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--primary-hover); }
+
+    .btn-soft {
+      background: var(--surface-soft);
+      color: var(--text);
+    }
+    .btn-soft:hover { filter: brightness(0.95); }
+
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+
+    .btn-danger {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .btn-sm { padding: 6px 10px; font-size: 0.78rem; border-radius: 8px; }
+
+    .google-btn {
+      background: #fff;
+      color: #1f2937;
+      border: 1px solid #d1d5db;
+      padding: 9px 16px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.86rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .google-btn:hover { background: #f9fafb; }
+
+    /* Pills */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 0.82rem;
+    }
+    .pill-high { background: var(--success-bg); color: var(--success); }
+    .pill-mid { background: var(--surface-soft); color: var(--text); }
+    .pill-warn { background: var(--warning-bg); color: var(--warning); }
+    .pill-low { background: var(--danger-bg); color: var(--danger); }
+    .pill-empty { background: var(--surface-muted); color: var(--muted); }
+
+    /* Segmented */
+    .segmented {
+      display: inline-flex;
+      background: var(--surface-muted);
+      padding: 4px;
+      border-radius: 11px;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .seg-btn {
+      border: none;
+      background: transparent;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .seg-btn.active {
+      background: var(--card);
+      color: var(--primary);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+      font-size: 0.88rem;
+    }
+
+    th {
+      background: var(--surface-muted);
+      color: var(--text);
+      font-weight: 700;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      padding: 11px 8px;
+      border-bottom: 1.5px solid var(--border);
+      text-align: center;
+    }
+
+    th.left, td.left { text-align: left; padding-left: 14px; }
+
+    td {
+      padding: 9px 7px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    .score-input {
+      width: 58px;
+      text-align: center;
+      padding: 6px 4px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      background: var(--card);
+      color: var(--text);
+    }
+    .score-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(102, 73, 48, 0.14);
+    }
+    .score-input.gk { background: #fffbeb; border-color: #f59e0b; color: #78350f; }
+    .score-input.ck { background: #fef2f2; border-color: #ef4444; color: #7f1d1d; }
+    .score-input.invalid { border-color: #dc2626; background: #fee2e2; }
+
+    /* Charts */
+    .bar-chart-box { position: relative; height: 330px; width: 100%; }
+    .subjects-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .sub-chart-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 14px;
+    }
+    .mini-chart-box { position: relative; height: 185px; width: 100%; margin-top: 8px; }
+
+    .chart-annotation {
+      display: flex;
+      gap: 10px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      margin-bottom: 14px;
+    }
+    .chart-annotation.warning { background: var(--warning-bg); color: var(--warning); }
+    .chart-annotation.success { background: var(--success-bg); color: var(--success); }
+    .chart-annotation.info { background: var(--surface-muted); color: var(--muted); }
+
+    /* Timetable Upload */
+    .dropzone {
+      border: 2.5px dashed var(--border);
+      border-radius: 18px;
+      padding: 46px 20px;
+      text-align: center;
+      background: var(--bg);
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .dropzone:hover { border-color: var(--primary); background: var(--surface-muted); }
+
+    .tkb-preview {
+      max-width: 100%;
+      max-height: 640px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* Form Controls */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .input, select {
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      color: var(--text);
+      background: var(--card);
+      font-family: inherit;
+    }
+    .input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    /* Theme Swatches in Settings */
+    .theme-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .theme-card {
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      cursor: pointer;
+      background: var(--bg);
+      transition: 0.18s;
+    }
+    .theme-card.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
+    }
+
+    .swatches {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .swatch {
+      height: 26px;
+      flex: 1;
+      border-radius: 6px;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    /* Checkbox grid for subjects */
+    .check-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .check-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Floating + Button */
+    .fab-add {
+      position: fixed;
+      right: 26px;
+      bottom: 26px;
+      z-index: 800;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      font-size: 2rem;
+      font-weight: 400;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.24);
+      display: grid;
+      place-items: center;
+      transition: transform 0.18s ease, background 0.18s ease;
+    }
+    .fab-add:hover {
+      transform: scale(1.08);
+      background: var(--primary-hover);
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(3px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal {
+      background: var(--card);
+      color: var(--text);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+      border: 1px solid var(--border);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-title { font-size: 1.18rem; font-weight: 800; }
+
+    .close-btn {
+      border: none;
+      background: var(--surface-muted);
+      color: var(--text);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+
+    .hidden { display: none !important; }
+
+
+    /* Settings: compact shortcut layout */
+    .profile-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}.profile-info{display:flex;flex-direction:column;align-items:flex-start}.profile-info h1,.profile-info p{margin-bottom:3px}
+    .settings-shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}
+    .settings-shortcut{min-width:0;text-align:left;display:flex;flex-direction:column;gap:5px;padding:13px 14px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--text);cursor:pointer;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+    .settings-shortcut:hover{transform:translateY(-2px);border-color:var(--primary);box-shadow:0 8px 20px rgba(0,0,0,.07)}
+    .settings-shortcut span{font-size:1.25rem}
+    .settings-shortcut strong{font-size:.9rem;line-height:1.3}
+    .settings-shortcut small{font-size:.75rem;color:var(--muted);line-height:1.35}
+    .settings-footer-actions{display:flex;justify-content:flex-end;margin-top:8px}
+    .modal-close{border:0;background:var(--surface-muted);color:var(--text);width:32px;height:32px;border-radius:50%;font-size:1rem;cursor:pointer}
+    .modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:14px;border-top:1px solid var(--border)}
+    .settings-modal-note{font-size:.82rem;color:var(--muted);margin:0 0 12px;line-height:1.5}
+    @media(max-width:760px){.settings-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}.settings-shortcut{padding:11px}}
+    @media(max-width:420px){.settings-shortcuts{gap:7px}.settings-shortcut small{font-size:.7rem}}
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .tiers-grid { grid-template-columns: 1fr; }
+      .rank-summary-box { grid-template-columns: 1fr; }
+      .subjects-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 820px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-wrap { margin-left: 0; }
+      .menu-toggle { display: inline-grid; place-items: center; }
+      .subjects-grid { grid-template-columns: 1fr; }
+      .content-area { padding: 16px; }
+    }
+
+    .sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 450;
+    }
+
+    #toastBox{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2000;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+    .toast{background:var(--primary);color:#fff;padding:10px 16px;border-radius:12px;font-size:.88rem;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw}
+    .toast.error{background:var(--danger)}
+    body.modal-open{overflow:hidden}
+    button:focus-visible,a:focus-visible,.dropzone:focus-visible,.nav-item:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+    .nav-item:focus-visible{outline-color:var(--sidebar-text)}
+    th.left:first-child,td.left:first-child{position:sticky;left:0;background:var(--card);z-index:1}
+    th.left:first-child{background:var(--surface-muted)}
+
+    /* StudyTrack UX polish */
+    :root { --glass: linear-gradient(135deg, rgba(255,255,255,.82), rgba(255,255,255,.48)); }
+    .card,.tier-card,.fluc-item,.rank-status-card,.advice-box,.sub-mini-card,.sub-chart-card,.theme-card {
+      background-image: var(--glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s ease, border-color .22s ease;
+    }
+    .card:hover,.tier-card:hover,.fluc-item:hover,.rank-status-card:hover,.advice-box:hover,.sub-mini-card:hover,.sub-chart-card:hover,.theme-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(40,30,20,.11);
+    }
+    button,.btn,.nav-item,.seg-btn,.fab-add,.google-btn,.year-mini-btn { transition: transform .2s ease, box-shadow .2s ease, background .2s ease, filter .2s ease; }
+    button:hover,.btn:hover,.nav-item:hover,.seg-btn:hover,.google-btn:hover,.year-mini-btn:hover { transform: scale(1.10); z-index:2; }
+    .fab-add:hover { transform: scale(1.10); }
+    .welcome-hero { background: linear-gradient(125deg,var(--primary),var(--accent),var(--primary)); background-size:180% 180%; animation: heroFlow 9s ease infinite; }
+    @keyframes heroFlow { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+    .page-enter { animation: pageIn .32s ease both; }
+    @keyframes pageIn { from{opacity:0;transform:translateY(9px)} to{opacity:1;transform:translateY(0)} }
+    .subjects-grid { grid-template-columns:1fr !important; }
+    .subject-chart-toggle { width:100%; display:flex; justify-content:space-between; align-items:center; padding:13px 15px; border:1px solid var(--border); border-radius:12px; background:var(--glass); color:var(--text); font-weight:750; cursor:pointer; text-align:left; }
+    .subject-chart-panel { margin:8px 0 12px; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--glass); height:220px; }
+    .calendar-shell { border:1px solid var(--border); border-radius:16px; padding:16px; background:var(--glass); margin-bottom:18px; }
+    .calendar-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+    .calendar-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; }
+    .calendar-cell { min-height:62px; padding:7px; border-radius:9px; background:var(--bg); border:1px solid var(--border); font-size:.8rem; }
+    .calendar-cell.today { outline:2px solid var(--primary); }
+    .calendar-cell.has-exam { background:var(--surface-soft); }
+    .calendar-cell.muted { opacity:.35; }
+    .calendar-dot { display:block; width:6px;height:6px;border-radius:50%;background:var(--primary);margin-top:5px; }
+    .settings-details { border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:16px; background:var(--glass); }
+    .settings-details summary { cursor:pointer; font-weight:800; list-style:none; display:flex; justify-content:space-between; }
+    .settings-details summary::-webkit-details-marker { display:none; }
+    .profile-hero { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+    .profile-meta { display:flex; align-items:center; gap:14px; }
+    .profile-large-avatar { width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.22);font-size:1.5rem;font-weight:800;overflow:hidden; }
+    .profile-large-avatar img {width:100%;height:100%;object-fit:cover}
+    @media(max-width:600px) {
+      .calendar-cell {min-height:48px;padding:5px;font-size:.72rem}
+      .calendar-shell {padding:10px}
+      .card {padding:15px}
+    }
+    @media(prefers-reduced-motion:reduce) { *,*::before,*::after {animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important} }
+
+  </style>
+</head>
+<body>
+
+  <!-- Mobile Sidebar Overlay -->
+  <div id="sidebarOverlay" class="sidebar-overlay hidden" onclick="toggleSidebar(false)"></div>
+
+  <!-- Left Navigation Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">🎓</div>
+      <div class="brand-text">
+        <h2>StudyTrack THPT</h2>
+        <span>3 Năm Cấp 3</span>
+      </div>
+    </div>
+
+    <nav class="nav-list">
+      <button class="nav-item active" data-page="home" onclick="navigate('home')">🏠 Home</button>
+      <button class="nav-item" data-page="grades" onclick="navigate('grades')">📋 Bảng điểm</button>
+      <button class="nav-item" data-page="charts" onclick="navigate('charts')">📊 Biểu đồ theo dõi</button>
+      <button class="nav-item" data-page="timetable" onclick="navigate('timetable')">🗓️ Thời khóa biểu</button>
+      <button class="nav-item" data-page="exams" onclick="navigate('exams')">📅 Lịch kiểm tra</button>
+      <button class="nav-item" data-page="settings" onclick="navigate('settings')">⚙️ Setting</button>
+    </nav>
+
+  </aside>
+
+  <!-- Main Workspace -->
+  <div class="main-wrap">
+    <header class="top-header">
+      <div class="top-left">
+        <button class="menu-toggle" aria-label="Mở menu" onclick="toggleSidebar(true)">☰</button>
+        <div class="page-title-bar" id="topPageTitle">Trang chủ</div>
+      </div>
+
+      <button class="user-pill-btn" id="topUserBtn" onclick="openUserAction()">
+        <div class="user-avatar" id="topUserAvatar">?</div>
+        <div class="user-pill-meta">
+          <span class="user-pill-name" id="topUserName">Đăng nhập Google</span>
+          <span class="user-pill-class" id="topUserClass">Chưa xác định lớp</span>
+        </div>
+      </button>
+    </header>
+
+    <main class="content-area">
+
+      <!-- ==================== PAGE: HOME ==================== -->
+      <section id="page-home">
+        <!-- Large Rounded Greeting Rectangle -->
+        <div class="welcome-hero">
+          <div>
+            <h1 id="heroGreeting">Xin chào người dùng!</h1>
+            <p id="heroSub">Đăng nhập bằng Google để đồng bộ tên, xác định lớp theo tuổi và thiết lập lộ trình học tập.</p>
+            <div class="hero-badges" id="heroBadges"></div>
+          </div>
+          <div id="heroAuthAction">
+            <button class="google-btn" onclick="startGoogleLogin()">
+              <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+              Đăng nhập bằng Google
+            </button>
+          </div>
+        </div>
+
+        <!-- 3 Subject Alert Tiers -->
+        <div class="tiers-grid" id="homeTiersGrid"></div>
+
+        <!-- Score Fluctuation Amplitude Section -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📉 Mức Độ Ổn Định Của Điểm Thi</div>
+              <div style="font-size:0.8rem; color:var(--muted); margin-top:2px;">
+                Công thức: <code>(Cao nhất - Thấp nhất) / điểm TB × 100%</code> • Cảnh báo trên <strong id="flucThresholdLabel">30%</strong><div style="margin-top:3px">Điểm ổn định thường tốt hơn, trừ khi điểm tăng rõ rệt theo thời gian.</div>
+              </div>
+            </div>
+          </div>
+          <div class="fluc-list" id="homeFlucList"></div>
+        </div>
+
+        <!-- All Subjects Average + Classification & Goal Advisor -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🏆 Xếp Loại Danh Hiệu &amp; Gợi Ý Học Tập (<span id="homeYearLabel">Lớp 10</span>)</div>
+            <div class="segmented">
+              <button class="seg-btn" data-homemode="hk1" onclick="setHomeMode('hk1')">HK1</button>
+              <button class="seg-btn" data-homemode="hk2" onclick="setHomeMode('hk2')">HK2</button>
+              <button class="seg-btn" data-homemode="year" onclick="setHomeMode('year')">Cuối năm</button>
+            </div>
+          </div>
+
+          <div class="rank-summary-box">
+            <div class="rank-status-card">
+              <div style="font-size:0.8rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Xếp loại hiện tại</div>
+              <div class="rank-big" id="homeRankTitle">--</div>
+              <div style="font-size:0.85rem; color:var(--muted);" id="homeRankDesc">--</div>
+              <div style="margin-top:10px; font-size:0.84rem; font-weight:700;" id="homeGpaLine">ĐTB chung: --</div>
+              <div style="margin-top:6px; font-size:0.74rem; color:var(--muted);">Xếp loại theo Thông tư 22/2021, chưa xét kết quả rèn luyện.</div>
+            </div>
+            <div class="advice-box">
+              <div style="font-weight:800; font-size:0.95rem;" id="adviceTitle">🎯 Lộ trình đạt danh hiệu mục tiêu</div>
+              <ul class="advice-list" id="adviceList"></ul>
+            </div>
+          </div>
+
+          <div class="subjects-mini-grid" id="homeSubjectsGrid"></div>
+        </div>
+      </section>
+
+      <!-- ==================== PAGE: GRADEBOOK ==================== -->
+      <section id="page-grades" class="hidden">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📋 Bảng Điểm Chi Tiết — <span id="gradePageYear">Lớp 10</span></div>
+              <div style="font-size:0.82rem; color:var(--muted);">Hiển thị toàn bộ điểm Thường xuyên, Giữa kì (×2), Cuối kì (×3) và ĐTB Cả năm (HK2 gấp đôi HK1)</div>
+            </div>
+            <div class="segmented">
+              <button class="seg-btn" data-gview="hk1" onclick="setGradeView('hk1')">HK1</button>
+              <button class="seg-btn" data-gview="hk2" onclick="setGradeView('hk2')">HK2</button>
+              <button class="seg-btn" data-gview="year" onclick="setGradeView('year')">Cuối năm</button>
+            </div>
+          </div>
+
+          <div id="gradeTablesContainer"></div>
+
+          <div id="passFailSubjectsBox" style="margin-top:18px;"></div>
+        </div>
+      </section>
+
+      <!-- ==================== PAGE: CHARTS ==================== -->
+      <section id="page-charts" class="hidden">
+        <!-- 1. Bar Chart -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📊 Mục 1: Biểu Đồ Cột Điểm Trung Bình Các Môn</div>
+            <div class="segmented">
+              <button class="seg-btn active" data-barmode="year" onclick="setBarMode('year')">Cả năm</button>
+              <button class="seg-btn" data-barmode="hk1" onclick="setBarMode('hk1')">Học kì 1</button>
+              <button class="seg-btn" data-barmode="hk2" onclick="setBarMode('hk2')">Học kì 2</button>
+            </div>
+          </div>
+          <div id="barAnnotation" class="chart-annotation info"></div>
+          <div class="bar-chart-box">
+            <canvas id="barChartCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- 2. Line Charts per Subject -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📈 Mục 2: Biểu Đồ Đường Từng Môn Học</div>
+              <div style="font-size:0.82rem; color:var(--muted);">Theo dõi biến động từ TX1–4, Giữa kì, Cuối kì của cả HK1 và HK2</div>
+            </div>
+            <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; font-weight:700; cursor:pointer;">
+              <input type="checkbox" id="zoomToggle" onchange="renderChartsPage()" />
+              Thu phóng sát biên độ
+            </label>
+          </div>
+          <div class="subjects-grid" id="lineChartsGrid"></div>
+        </div>
+      </section>
+
+      <!-- ==================== PAGE: TIMETABLE ==================== -->
+      <section id="page-timetable" class="hidden">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🗓️ Thời Khóa Biểu (<span id="tkbYearLabel">Lớp 10</span>)</div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary btn-sm" onclick="document.getElementById('tkbInput').click()">📤 Nhập ảnh / File mới</button>
+              <button class="btn btn-danger btn-sm hidden" id="tkbDeleteBtn" onclick="deleteTimetable()">🗑️ Xóa TKB</button>
+            </div>
+          </div>
+
+          <input type="file" id="tkbInput" accept="image/*,.pdf" class="hidden" onchange="handleTimetableUpload(event)" />
+
+          <div id="tkbEmptyState" class="dropzone" role="button" tabindex="0" onclick="document.getElementById('tkbInput').click()">
+            <div style="font-size:2.6rem; margin-bottom:10px;">🖼️</div>
+            <h3 style="margin-bottom:6px;">Chưa có Thời khóa biểu</h3>
+            <p style="font-size:0.88rem; color:var(--muted); margin-bottom:16px;">
+              Nhấn vào đây để tải lên <strong>Hình ảnh (PNG, JPG)</strong> hoặc <strong>File PDF</strong> thời khóa biểu lớp của bạn.
+            </p>
+            <button type="button" class="btn btn-primary">📁 Chọn hình ảnh / File</button>
+          </div>
+
+          <div id="tkbDisplayBox" class="hidden"></div>
+        </div>
+      </section>
+
+      <!-- ==================== PAGE: EXAMS ==================== -->
+      <section id="page-exams" class="hidden">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📅 Lịch Kiểm Tra &amp; Tự Tính Lịch Ôn Tập</div>
+              <div style="font-size:0.82rem; color:var(--muted);">
+                Hệ thống tự lấy <strong>điểm gần nhất</strong> của môn trong bảng điểm để tính ngày bắt đầu ôn (1 tuần – 3 tuần trước ngày thi)
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="openExamModal()">+ Thêm lịch kiểm tra</button>
+          </div>
+
+          <div id="examCalendar"></div><div class="table-wrap" id="examTableContainer"></div>
+        </div>
+      </section>
+
+      <!-- ==================== PAGE: SETTINGS ==================== -->
+      <section id="page-settings" class="hidden">
+        <div class="welcome-hero profile-hero">
+          <div class="profile-meta">
+            <div class="profile-large-avatar" id="settingsProfileAvatar">?</div>
+            <div class="profile-info">
+              <h1 id="settingsProfileTitle">Hello world!</h1>
+              <p id="settingsProfileSub">Đăng nhập để thiết lập hồ sơ cá nhân</p>
+              <div id="settingsProfileAction" class="profile-actions">
+                <button class="btn btn-soft" onclick="openSettingsModal('profileSettingsModal')">✏️ Chỉnh sửa</button>
+                <button class="google-btn" onclick="startGoogleLogin()">Đăng nhập Google</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-shortcuts">
+          <button class="settings-shortcut" onclick="openSettingsModal('learningSettingsModal')"><span>🎯</span><strong>Học tập</strong><small>Mục tiêu, khối thi, cảnh báo</small></button>
+          <button class="settings-shortcut" onclick="openSettingsModal('subjectsSettingsModal')"><span>📚</span><strong>Môn học</strong><small>Chọn môn đang học</small></button>
+          <button class="settings-shortcut" onclick="openSettingsModal('themeSettingsModal')"><span>🎨</span><strong>Giao diện</strong><small>Thay đổi bảng màu</small></button>
+          <button class="settings-shortcut" onclick="openSettingsModal('advancedSettingsModal')"><span>🗂️</span><strong>Năm học &amp; dữ liệu nâng cao</strong><small>Chuyển lớp, nhập và sao lưu dữ liệu</small></button>
+        </div>
+        <div class="settings-footer-actions">
+          <button id="logoutBtn" class="btn btn-outline hidden" onclick="logout()">🚪 Đăng xuất</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ==================== SETTINGS POPUPS ==================== -->
+  <div id="profileSettingsModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeSettingsModal('profileSettingsModal')">
+    <div class="modal">
+      <div class="modal-header"><div class="modal-title">👤 Chỉnh sửa hồ sơ</div><button class="modal-close" onclick="closeSettingsModal('profileSettingsModal')">✕</button></div>
+      <div class="form-grid">
+        <div class="field"><label for="set_name">Tên hiển thị</label><input class="input" id="set_name" type="text" placeholder="Tên của bạn"></div>
+        <div class="field"><label for="set_age">Tuổi (để xác định Lớp 10 / 11 / 12)</label><input class="input" id="set_age" type="number" min="14" max="20" placeholder="16"></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-outline" onclick="closeSettingsModal('profileSettingsModal')">Hủy</button><button class="btn btn-primary" onclick="saveSettingsForm()">Lưu hồ sơ</button></div>
+    </div>
+  </div>
+
+  <div id="learningSettingsModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeSettingsModal('learningSettingsModal')">
+    <div class="modal">
+      <div class="modal-header"><div class="modal-title">🎯 Cài đặt học tập</div><button class="modal-close" onclick="closeSettingsModal('learningSettingsModal')">✕</button></div>
+      <div class="form-grid">
+        <div class="field"><label for="set_examBlock">Khối hiện muốn thi</label><select id="set_examBlock"><option value="A00 (Toán - Lí - Hóa)">A00 (Toán - Lí - Hóa)</option><option value="A01 (Toán - Lí - Anh)">A01 (Toán - Lí - Anh)</option><option value="B00 (Toán - Hóa - Sinh)">B00 (Toán - Hóa - Sinh)</option><option value="C00 (Văn - Sử - Địa)">C00 (Văn - Sử - Địa)</option><option value="D01 (Toán - Văn - Anh)">D01 (Toán - Văn - Anh)</option><option value="D07 (Toán - Hóa - Anh)">D07 (Toán - Hóa - Anh)</option><option value="Khác / Đánh giá năng lực">Khác / Đánh giá năng lực</option></select></div>
+        <div class="field"><label for="set_targetTitle">Danh hiệu mục tiêu</label><select id="set_targetTitle"><option value="HSXX">Học sinh Xuất sắc</option><option value="HSG">Học sinh Giỏi</option></select></div>
+        <div class="field"><label for="set_alertScore">Mức điểm báo động (ĐTB dưới mức này)</label><input class="input" id="set_alertScore" type="number" step="0.1" min="0" max="10"></div>
+        <div class="field"><label for="set_highScore">Mục tiêu điểm (ĐTB từ mức này trở lên)</label><input class="input" id="set_highScore" type="number" step="0.1" min="0" max="10"></div>
+        <div class="field"><label for="set_flucWarn">Ngưỡng cảnh báo dao động điểm (%)</label><input class="input" id="set_flucWarn" type="number" step="1" min="5" max="100"></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-outline" onclick="closeSettingsModal('learningSettingsModal')">Đóng</button><button class="btn btn-primary" onclick="saveSettingsForm()">Lưu thay đổi</button></div>
+    </div>
+  </div>
+
+  <div id="subjectsSettingsModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeSettingsModal('subjectsSettingsModal')">
+    <div class="modal">
+      <div class="modal-header"><div class="modal-title">📚 Môn học đang học</div><button class="modal-close" onclick="closeSettingsModal('subjectsSettingsModal')">✕</button></div>
+      <p class="settings-modal-note"><strong>Môn bắt buộc:</strong> Ngữ văn, Toán, Ngoại ngữ 1, Lịch sử (tính điểm) cùng các môn đánh giá Đạt/Chưa đạt.</p>
+      <label style="font-size:.84rem;font-weight:700">Môn học lựa chọn</label>
+      <div class="check-grid" id="settingsElectivesGrid"></div>
+      <p id="electiveCountNote" class="settings-modal-note"></p>
+      <div class="modal-footer"><button class="btn btn-outline" onclick="closeSettingsModal('subjectsSettingsModal')">Đóng</button><button class="btn btn-primary" onclick="saveSettingsSubjects()">Cập nhật môn học</button></div>
+    </div>
+  </div>
+
+  <div id="themeSettingsModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeSettingsModal('themeSettingsModal')">
+    <div class="modal">
+      <div class="modal-header"><div class="modal-title">🎨 Bảng màu giao diện</div><button class="modal-close" onclick="closeSettingsModal('themeSettingsModal')">✕</button></div>
+      <div class="theme-options" id="themeOptions">
+        <div class="theme-card" data-theme-id="default" onclick="setTheme('default')"><strong>Mặc định (Ấm áp)</strong><div class="swatches"><div class="swatch" style="background:#FFDBBB"></div><div class="swatch" style="background:#CCBEB1"></div><div class="swatch" style="background:#997E67"></div><div class="swatch" style="background:#664930"></div></div></div>
+        <div class="theme-card" data-theme-id="theme2" onclick="setTheme('theme2')"><strong>Pastel Vintage</strong><div class="swatches"><div class="swatch" style="background:#C1C0C2"></div><div class="swatch" style="background:#F5E9E7"></div><div class="swatch" style="background:#837D68"></div><div class="swatch" style="background:#8A9DB1"></div><div class="swatch" style="background:#ECC5C6"></div></div></div>
+        <div class="theme-card" data-theme-id="theme3" onclick="setTheme('theme3')"><strong>Xanh Rêu</strong><div class="swatches"><div class="swatch" style="background:#7B9669"></div><div class="swatch" style="background:#E6E6E6"></div><div class="swatch" style="background:#6C8480"></div><div class="swatch" style="background:#BAC8B1"></div><div class="swatch" style="background:#404E3B"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="advancedSettingsModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeSettingsModal('advancedSettingsModal')">
+    <div class="modal">
+      <div class="modal-header"><div class="modal-title">🗂️ Năm học &amp; dữ liệu nâng cao</div><button class="modal-close" onclick="closeSettingsModal('advancedSettingsModal')">✕</button></div>
+      <div class="card" style="margin-bottom:12px"><div class="card-title" style="margin-bottom:10px">Năm học đang xem</div><div class="segmented"><button class="seg-btn" data-yr="10" onclick="switchYear('10')">Lớp 10</button><button class="seg-btn" data-yr="11" onclick="switchYear('11')">Lớp 11</button><button class="seg-btn" data-yr="12" onclick="switchYear('12')">Lớp 12</button></div></div>
+      <div class="card"><div class="card-title" style="margin-bottom:10px">💾 Dữ liệu &amp; sao lưu</div><div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn btn-soft" onclick="loadDemoData()">✨ Điền điểm mẫu</button><button class="btn btn-outline" onclick="exportJSON()">⬇️ Xuất JSON</button><button class="btn btn-outline" onclick="document.getElementById('importFile').click()">⬆️ Nhập JSON</button><input type="file" id="importFile" accept=".json" class="hidden" onchange="importJSON(event)"><button class="btn btn-danger" onclick="resetAllData()">🗑️ Đặt lại toàn bộ</button></div></div>
+    </div>
+  </div>
+
+  <!-- ALWAYS VISIBLE FLOATING + BUTTON (Bottom Right) -->
+  <button class="fab-add" aria-label="Thêm điểm nhanh" title="Thêm điểm nhanh" onclick="openQuickScoreModal()">+</button>
+
+  <!-- ==================== MODAL: QUICK ADD SCORE (+) ==================== -->
+  <div id="quickScoreModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">➕ Thêm Điểm Thủ Công</div>
+        <button class="close-btn" aria-label="Đóng" onclick="closeModal('quickScoreModal')">✕</button>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="qs_year">Lớp</label>
+          <select id="qs_year" onchange="refreshQuickScoreSubjects()">
+            <option value="10">Lớp 10</option>
+            <option value="11">Lớp 11</option>
+            <option value="12">Lớp 12</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="qs_sem">Học kì</label>
+          <select id="qs_sem" onchange="updateQuickScoreHint()">
+            <option value="hk1">Học kì 1</option>
+            <option value="hk2">Học kì 2 (Hệ số 2)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="qs_subject">Môn học</label>
+          <select id="qs_subject" onchange="updateQuickScoreHint()"></select>
+        </div>
+        <div class="field">
+          <label for="qs_col">Cột điểm</label>
+          <select id="qs_col" onchange="updateQuickScoreHint()">
+            <option value="tx0">Thường xuyên 1 (×1)</option>
+            <option value="tx1">Thường xuyên 2 (×1)</option>
+            <option value="tx2">Thường xuyên 3 (×1)</option>
+            <option value="tx3">Thường xuyên 4 (×1)</option>
+            <option value="gk">Giữa kì (×2)</option>
+            <option value="ck">Cuối kì (×3)</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="qs_value">Điểm số (0 – 10) — để trống để xóa điểm đã có</label>
+          <input class="input" id="qs_value" type="text" inputmode="decimal" placeholder="VD: 8.5 hoặc 8,5" />
+          <p id="qs_hint" style="font-size:0.8rem; color:var(--muted); min-height:1.2em;"></p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+        <button class="btn btn-outline" onclick="closeModal('quickScoreModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="submitQuickScore()">Lưu điểm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: ADD EXAM SCHEDULE ==================== -->
+  <div id="examModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">📅 Thêm Lịch Kiểm Tra Mới</div>
+        <button class="close-btn" aria-label="Đóng" onclick="closeModal('examModal')">✕</button>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="ex_subject">Môn kiểm tra</label>
+          <select id="ex_subject"></select>
+        </div>
+        <div class="field">
+          <label for="ex_type">Loại bài kiểm tra</label>
+          <select id="ex_type">
+            <option value="Thường xuyên">Thường xuyên (×1)</option>
+            <option value="Giữa kì">Giữa kì (×2)</option>
+            <option value="Cuối kì">Cuối kì (×3)</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="ex_title">Tên / Nội dung bài kiểm tra</label>
+          <input class="input" id="ex_title" type="text" placeholder="VD: Kiểm tra chương 2 - Hàm số bậc hai" />
+        </div>
+        <div class="field">
+          <label for="ex_date">Ngày kiểm tra</label>
+          <input class="input" id="ex_date" type="date" />
+        </div>
+        <div class="field">
+          <label for="ex_time">Giờ kiểm tra (tuỳ chọn)</label>
+          <input class="input" id="ex_time" type="time" />
+        </div>
+      </div>
+      <p style="font-size:0.8rem; color:var(--muted); margin-top:12px;">
+        💡 Hệ thống sẽ tự kiểm tra điểm gần nhất của môn này để đề xuất bắt đầu ôn tập trước <strong>1 tuần – 3 tuần</strong>.
+      </p>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+        <button class="btn btn-outline" onclick="closeModal('examModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="saveNewExam()">Thêm vào lịch</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: GOOGLE SIGN-IN & ONBOARDING ==================== -->
+  <div id="authModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">🔐 Đăng nhập tài khoản Google</div>
+        <button class="close-btn" aria-label="Đóng" onclick="closeModal('authModal')">✕</button>
+      </div>
+      <div id="authStepLogin">
+        <p style="font-size:0.88rem; color:var(--muted); margin-bottom:14px;">
+          Bấm nút bên dưới và chọn tài khoản Google của bạn. Hệ thống chỉ hỏi tuổi một lần để tự xếp lớp.
+        </p>
+        <div id="authGoogleBtn" style="display:flex; justify-content:center; min-height:44px; margin-bottom:14px;"></div>
+        <details id="manualLogin">
+          <summary style="cursor:pointer; font-size:0.84rem; font-weight:700; margin-bottom:12px;">Không dùng Google? Nhập thông tin thủ công</summary>
+        <div class="form-grid">
+          <div class="field">
+            <label for="login_name">Họ và tên (Tài khoản Google)</label>
+            <input class="input" id="login_name" type="text" placeholder="VD: Nguyễn Minh Anh" />
+          </div>
+          <div class="field">
+            <label for="login_email">Email Google</label>
+            <input class="input" id="login_email" type="email" placeholder="minhanh@gmail.com" />
+          </div>
+          <div class="field" style="grid-column: 1 / -1;">
+            <label for="login_age">Tuổi của bạn (nếu để trống, bước sau sẽ hỏi lại)</label>
+            <input class="input" id="login_age" type="number" min="14" max="20" placeholder="VD: 16 (Lớp 11)" />
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+          <button class="btn btn-outline" onclick="closeModal('authModal')">Đóng</button>
+          <button class="btn btn-primary" onclick="completeLocalGoogleLogin()">Đăng nhập &amp; Thiết lập</button>
+        </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: POST-LOGIN ONBOARDING WIZARD ==================== -->
+  <div id="onboardingModal" class="modal-backdrop hidden">
+    <div class="modal" style="max-width:680px;">
+      <div class="modal-header">
+        <div class="modal-title">🎓 Thiết Lập Hồ Sơ Học Tập Của Bạn</div>
+        <button id="ob_closeBtn" class="close-btn hidden" aria-label="Đóng" onclick="closeModal('onboardingModal')">✕</button>
+      </div>
+
+      <div id="ob_ageBox" class="field" style="margin-bottom:14px;">
+        <label for="ob_age">Tuổi hiện tại của bạn (Tài khoản chưa có tuổi — dùng để xác định Lớp 10 / 11 / 12)</label>
+        <input class="input" id="ob_age" type="number" min="14" max="20" value="16" />
+      </div>
+
+      <div class="form-grid" style="margin-bottom:14px;">
+        <div class="field">
+          <label for="ob_block">Khối hiện muốn thi</label>
+          <select id="ob_block">
+            <option value="A00 (Toán - Lí - Hóa)">A00 (Toán - Lí - Hóa)</option>
+            <option value="A01 (Toán - Lí - Anh)">A01 (Toán - Lí - Anh)</option>
+            <option value="B00 (Toán - Hóa - Sinh)">B00 (Toán - Hóa - Sinh)</option>
+            <option value="C00 (Văn - Sử - Địa)">C00 (Văn - Sử - Địa)</option>
+            <option value="D01 (Toán - Văn - Anh)">D01 (Toán - Văn - Anh)</option>
+            <option value="D07 (Toán - Hóa - Anh)">D07 (Toán - Hóa - Anh)</option>
+            <option value="Khác / Đánh giá năng lực">Khác / Đánh giá năng lực</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="ob_title">Danh hiệu mục tiêu</label>
+          <select id="ob_title">
+            <option value="HSXX">Học sinh Xuất sắc (HSXX)</option>
+            <option value="HSG">Học sinh Giỏi (HSG)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <div style="font-size:0.84rem; font-weight:700; margin-bottom:4px;">Môn học &amp; nội dung giáo dục bắt buộc (Mặc định có):</div>
+        <div style="font-size:0.8rem; color:var(--muted); background:var(--bg); padding:9px 12px; border-radius:10px;">
+          • Tính điểm: <strong>Ngữ văn, Toán, Ngoại ngữ 1 (Tiếng Anh), Lịch sử</strong><br>
+          • Đánh giá Đạt/Chưa đạt: <strong>Giáo dục thể chất, GDQP-AN, HĐTN-HN, Nội dung giáo dục địa phương</strong>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <div style="font-size:0.84rem; font-weight:700; margin-bottom:4px;">Chọn các Môn học lựa chọn (theo tổ hợp trường bạn):</div>
+        <div class="check-grid" id="ob_electivesGrid"></div>
+      </div>
+
+      <div class="form-grid" style="margin-bottom:10px;">
+        <div class="field">
+          <label for="ob_alert">Mức điểm Báo động (&lt;)</label>
+          <input class="input" id="ob_alert" type="number" step="0.1" min="0" max="10" value="6.5" />
+        </div>
+        <div class="field">
+          <label for="ob_high">Mức điểm Cao (≥)</label>
+          <input class="input" id="ob_high" type="number" step="0.1" min="0" max="10" value="8.0" />
+        </div>
+        <div class="field">
+          <label for="ob_fluc">Cảnh báo dao động (%)</label>
+          <input class="input" id="ob_fluc" type="number" step="1" min="5" max="100" value="30" />
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+        <button class="btn btn-primary" onclick="finishOnboarding()">Hoàn tất &amp; Vào trang chủ</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'studytrack_thpt_v2';
+
+    const MANDATORY_SCORED = ['Ngữ văn', 'Toán', 'Ngoại ngữ 1 (Tiếng Anh)', 'Lịch sử'];
+    const MANDATORY_PASSFAIL = [
+      'Giáo dục thể chất',
+      'Giáo dục quốc phòng và an ninh',
+      'Hoạt động trải nghiệm, hướng nghiệp',
+      'Nội dung giáo dục của địa phương'
+    ];
+    const ELECTIVE_POOL = [
+      'Địa lí',
+      'Giáo dục kinh tế và pháp luật',
+      'Vật lí',
+      'Hóa học',
+      'Sinh học',
+      'Công nghệ',
+      'Tin học',
+      'Âm nhạc',
+      'Mĩ thuật'
+    ];
+
+    const PAGES = ['home', 'grades', 'charts', 'timetable', 'exams', 'settings'];
+    const MAIN3 = ['Ngữ văn', 'Toán', 'Ngoại ngữ 1 (Tiếng Anh)'];
+    const isNum = v => typeof v === 'number' && !isNaN(v);
+    const validAge = a => Number.isInteger(a) && a >= 14 && a <= 20;
+    const localDateStr = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    function showToast(msg, type) {
+      let box = document.getElementById('toastBox');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'toastBox';
+        box.setAttribute('role', 'status');
+        box.setAttribute('aria-live', 'polite');
+        document.body.appendChild(box);
+      }
+      const t = document.createElement('div');
+      t.className = 'toast ' + (type || 'ok');
+      t.textContent = msg;
+      box.appendChild(t);
+      setTimeout(() => t.remove(), 3400);
+    }
+
+    function wrapLabel(str) {
+      const out = []; let cur = '';
+      String(str).split(' ').forEach(w => {
+        if (cur && (cur + ' ' + w).length > 14) { out.push(cur); cur = w; }
+        else cur = (cur + ' ' + w).trim();
+      });
+      if (cur) out.push(cur);
+      return out;
+    }
+
+    function getDefaultState() {
+      const defaultElectives = ['Vật lí', 'Hóa học', 'Sinh học', 'Địa lí', 'Tin học'];
+      return {
+        page: 'home',
+        activeYear: '10',
+        homeMode: 'hk1',
+        gradeView: 'hk1',
+        barMode: 'year',
+        theme: 'default',
+        user: {
+          loggedIn: false,
+          name: '',
+          email: '',
+          avatar: '',
+          age: null,
+          onboarded: false
+        },
+        settings: {
+          examBlock: 'A00 (Toán - Lí - Hóa)',
+          targetTitle: 'HSXX',
+          alertScore: 6.5,
+          highScore: 8.0,
+          flucWarnPct: 30,
+          googleClientId: '',
+          electives: defaultElectives
+        },
+        grades: {
+          '10': {},
+          '11': {},
+          '12': {}
+        },
+        passFail: {
+          '10': {},
+          '11': {},
+          '12': {}
+        },
+        timetables: {
+          '10': null,
+          '11': null,
+          '12': null
+        },
+        exams: []
+      };
+    }
+
+    let state = loadState();
+    let barChart = null;
+    let lineCharts = [];
+
+    function normalizeState(p) {
+      const base = getDefaultState();
+      if (!p || typeof p !== 'object' || Array.isArray(p)) return base;
+      const s = { ...base, ...p };
+      const obj = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+      s.user = { ...base.user, ...obj(p.user) };
+      s.settings = { ...base.settings, ...obj(p.settings) };
+      const age = Number(s.user.age);
+      s.user.age = validAge(age) ? age : null;
+      const num = (v, d, lo, hi) => { const n = Number(v); return (v !== null && v !== '' && isFinite(n) && n >= lo && n <= hi) ? n : d; };
+      s.settings.alertScore = num(s.settings.alertScore, 6.5, 0, 10);
+      s.settings.highScore = num(s.settings.highScore, 8, 0, 10);
+      if (s.settings.alertScore >= s.settings.highScore) { s.settings.alertScore = 6.5; s.settings.highScore = 8; }
+      s.settings.flucWarnPct = num(s.settings.flucWarnPct, 30, 5, 100);
+      s.settings.googleClientId = String(s.settings.googleClientId || '');
+      const el = Array.isArray(s.settings.electives) ? s.settings.electives.filter(x => ELECTIVE_POOL.includes(x)) : [];
+      s.settings.electives = el.length ? [...new Set(el)] : base.settings.electives;
+      s.activeYear = ['10', '11', '12'].includes(String(s.activeYear)) ? String(s.activeYear) : '10';
+      if (!PAGES.includes(s.page)) s.page = 'home';
+      if (!['year', 'hk1', 'hk2'].includes(s.homeMode)) s.homeMode = 'year';
+      if (!['year', 'hk1', 'hk2'].includes(s.gradeView)) s.gradeView = 'hk1';
+      if (!['year', 'hk1', 'hk2'].includes(s.barMode)) s.barMode = 'year';
+      if (!['default', 'theme2', 'theme3'].includes(s.theme)) s.theme = 'default';
+      const sc = v => { if (v === null || v === undefined || v === '') return null; const n = Number(v); return isFinite(n) && n >= 0 && n <= 10 ? Math.round(n * 100) / 100 : null; };
+      const sem = x => { const o = obj(x); const tx = Array.isArray(o.tx) ? o.tx : []; return { tx: [0, 1, 2, 3].map(i => sc(tx[i])), gk: sc(o.gk), ck: sc(o.ck) }; };
+      s.grades = {}; s.passFail = {}; s.timetables = {};
+      ['10', '11', '12'].forEach(y => {
+        s.grades[y] = {};
+        const g = obj(obj(p.grades)[y]);
+        Object.keys(g).forEach(n => { s.grades[y][n] = { hk1: sem(obj(g[n]).hk1), hk2: sem(obj(g[n]).hk2) }; });
+        const pf = obj(obj(p.passFail)[y]);
+        s.passFail[y] = {};
+        MANDATORY_PASSFAIL.forEach(m => { if (pf[m] === 'Đạt' || pf[m] === 'Chưa đạt') s.passFail[y][m] = pf[m]; });
+        const t = obj(p.timetables)[y];
+        s.timetables[y] = t && typeof t.dataUrl === 'string' ? t : null;
+      });
+      s.exams = (Array.isArray(p.exams) ? p.exams : [])
+        .filter(e => e && e.date && e.subject && ['10', '11', '12'].includes(String(e.year)))
+        .map((e, i) => ({ ...e, year: String(e.year), id: e.id != null ? e.id : Date.now() + i }));
+      return s;
+    }
+
+    function loadState() {
+      let raw = null;
+      try {
+        raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return getDefaultState();
+        return normalizeState(JSON.parse(raw));
+      } catch {
+        try { if (raw) localStorage.setItem(STORAGE_KEY + '_corrupt_backup', raw); } catch {}
+        return getDefaultState();
+      }
+    }
+
+    function saveState(silent) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        return true;
+      } catch {
+        if (!silent) showToast('Không lưu được dữ liệu (bộ nhớ trình duyệt đầy hoặc bị chặn).', 'error');
+        return false;
+      }
+    }
+
+    function getActiveSubjects() {
+      const el = state.settings.electives && state.settings.electives.length
+        ? state.settings.electives
+        : ['Vật lí', 'Hóa học', 'Sinh học', 'Địa lí', 'Tin học'];
+      return [...MANDATORY_SCORED, ...el];
+    }
+
+    function emptySubjectData() {
+      return {
+        hk1: { tx: [null, null, null, null], gk: null, ck: null },
+        hk2: { tx: [null, null, null, null], gk: null, ck: null }
+      };
+    }
+
+    function peekSubjectData(year, subName) {
+      return (state.grades[year] && state.grades[year][subName]) || emptySubjectData();
+    }
+
+    function ensureSubjectData(year, subName) {
+      if (!state.grades[year]) state.grades[year] = {};
+      if (!state.grades[year][subName]) state.grades[year][subName] = emptySubjectData();
+      return state.grades[year][subName];
+    }
+
+    function ageToClass(age) {
+      const a = Number(age);
+      if (!age || !isFinite(a)) return null;
+      return a <= 15 ? '10' : a === 16 ? '11' : '12';
+    }
+
+    // ==================== CALCULATIONS ====================
+    function parseScore(val) {
+      if (val === null || val === undefined) return { valid: true, value: null };
+      const str = String(val).trim();
+      if (str === '') return { valid: true, value: null };
+      if (!/^(\d{1,2}([.,]\d*)?|[.,]\d+)$/.test(str)) return { valid: false, value: null };
+      const num = Number(str.replace(',', '.'));
+      if (isNaN(num) || num < 0 || num > 10) return { valid: false, value: null };
+      return { valid: true, value: Math.round(num * 100) / 100 };
+    }
+
+    function calcSemester(sem) {
+      const tx = sem.tx.filter(isNum);
+      const hasGK = isNum(sem.gk), hasCK = isNum(sem.ck);
+      if (!tx.length && !hasGK && !hasCK) return { avg: null, missingCK: true, isProvisional: true };
+      const c = v => Math.round(v * 100); // tính bằng số nguyên (phần trăm điểm) để làm tròn chính xác
+      const denom = tx.length + (hasGK ? 2 : 0) + (hasCK ? 3 : 0);
+      const num = tx.reduce((a, b) => a + c(b), 0) + (hasGK ? 2 * c(sem.gk) : 0) + (hasCK ? 3 * c(sem.ck) : 0);
+      return { avg: Math.round(num / denom / 10) / 10, missingCK: !hasCK, isProvisional: !hasGK || !hasCK };
+    }
+
+    function calcAnnual(subData) {
+      const r1 = calcSemester(subData.hk1);
+      const r2 = calcSemester(subData.hk2);
+      if (r1.avg === null && r2.avg === null) return { avg: null, r1, r2, missingCK: true, isProvisional: true };
+      if (r1.avg !== null && r2.avg !== null) {
+        const avg = Math.round((Math.round(r1.avg * 10) + 2 * Math.round(r2.avg * 10)) / 3) / 10;
+        return { avg, r1, r2, missingCK: r1.missingCK || r2.missingCK, isProvisional: r1.isProvisional || r2.isProvisional };
+      }
+      return { avg: r1.avg !== null ? r1.avg : r2.avg, r1, r2, missingCK: true, isProvisional: true };
+    }
+
+    function getSubjectScoresArray(subData, mode) {
+      const take = h => [...h.tx, h.gk, h.ck];
+      const arr = mode === 'hk1' ? take(subData.hk1) : mode === 'hk2' ? take(subData.hk2) : [...take(subData.hk1), ...take(subData.hk2)];
+      return arr.filter(isNum);
+    }
+
+    function getLatestScore(year, subName) {
+      const d = peekSubjectData(year, subName);
+      const seq = [
+        d.hk2.ck, d.hk2.gk, d.hk2.tx[3], d.hk2.tx[2], d.hk2.tx[1], d.hk2.tx[0],
+        d.hk1.ck, d.hk1.gk, d.hk1.tx[3], d.hk1.tx[2], d.hk1.tx[1], d.hk1.tx[0]
+      ];
+      for (const v of seq) {
+        if (v !== null && !isNaN(v)) return v;
+      }
+      return null;
+    }
+
+    function pillClass(v) {
+      if (v === null) return 'pill-empty';
+      if (v >= state.settings.highScore) return 'pill-high';
+      if (v >= state.settings.alertScore) return 'pill-mid';
+      if (v >= Math.min(5.0, state.settings.alertScore)) return 'pill-warn';
+      return 'pill-low';
+    }
+
+    // ==================== NAVIGATION & THEME ====================
+    function applyTheme() {
+      if (state.theme === 'default') {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', state.theme);
+      }
+      document.querySelectorAll('.theme-card').forEach(el => {
+        el.classList.toggle('active', el.dataset.themeId === state.theme);
+      });
+    }
+
+    function setTheme(themeId) {
+      state.theme = themeId;
+      saveState();
+      applyTheme();
+      if (state.page === 'charts') renderChartsPage();
+    }
+
+    function navigate(page) {
+      if (!PAGES.includes(page)) page = 'home';
+      const changed = document.getElementById(`page-${page}`).classList.contains('hidden');
+      state.page = page;
+      saveState();
+      toggleSidebar(false);
+      const titles = {
+        home: 'Trang chủ', grades: 'Bảng điểm', charts: 'Biểu đồ theo dõi',
+        timetable: 'Thời khóa biểu', exams: 'Lịch kiểm tra', settings: 'Cài đặt hệ thống'
+      };
+      document.getElementById('topPageTitle').textContent = titles[page];
+      document.querySelectorAll('.nav-item').forEach(btn => btn.classList.toggle('active', btn.dataset.page === page));
+      PAGES.forEach(p => {
+        const el = document.getElementById(`page-${p}`);
+        el.classList.toggle('hidden', p !== page);
+        if (p === page) { el.classList.remove('page-enter'); void el.offsetWidth; el.classList.add('page-enter'); }
+      });
+      if (changed) window.scrollTo(0, 0);
+      renderCurrentPage(true);
+    }
+
+    function switchYear(yr) {
+      state.activeYear = yr;
+      saveState();
+      document.querySelectorAll('.year-mini-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.yr === yr);
+      });
+      renderCurrentPage();
+    }
+
+    function toggleSidebar(open) {
+      document.getElementById('sidebar').classList.toggle('open', open);
+      document.getElementById('sidebarOverlay').classList.toggle('hidden', !open);
+    }
+
+    // ==================== GOOGLE AUTH & ONBOARDING ====================
+    function renderTopUser() {
+      const u = state.user;
+      const av = document.getElementById('topUserAvatar');
+      const nameEl = document.getElementById('topUserName');
+      const classEl = document.getElementById('topUserClass');
+      if (!u.loggedIn) {
+        av.textContent = 'G';
+        nameEl.textContent = 'Đăng nhập Google';
+        classEl.textContent = `Đang xem Lớp ${state.activeYear}`;
+        return;
+      }
+      const nm = u.name || 'Người dùng';
+      const ini = nm.charAt(0).toUpperCase();
+      if (u.avatar) av.innerHTML = `<img src="${escapeHtml(u.avatar)}" alt="" referrerpolicy="no-referrer" data-i="${escapeHtml(ini)}" onerror="this.parentNode.textContent=this.dataset.i" />`;
+      else av.textContent = ini;
+      nameEl.textContent = nm;
+      classEl.textContent = u.age ? `Lớp ${state.activeYear} • ${u.age} tuổi` : `Lớp ${state.activeYear}`;
+    }
+
+    function openUserAction() {
+      if (!state.user.loggedIn) {
+        startGoogleLogin();
+      } else {
+        navigate('settings');
+      }
+    }
+
+    const GOOGLE_CLIENT_ID = '530581194930-4ronvsbehs6skt4cs98evtpg1mjnjumj.apps.googleusercontent.com';
+    let gisReady = false;
+
+    function initGoogleSignIn() {
+      if (gisReady) return true;
+      if (location.protocol === 'file:' || typeof google === 'undefined' || !google.accounts || !google.accounts.id) return false;
+      google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCredential, cancel_on_tap_outside: true });
+      gisReady = true;
+      return true;
+    }
+
+    function renderGoogleButton(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (!initGoogleSignIn()) {
+        if (id === 'authGoogleBtn') {
+          const why = location.protocol === 'file:' ? 'Đăng nhập Google chỉ hoạt động khi web chạy qua http(s), không mở trực tiếp file.' : 'Chưa tải được Google (kiểm tra kết nối Internet).';
+          el.innerHTML = `<p style="font-size:0.82rem; color:var(--muted);">${why} Bạn vẫn có thể nhập thủ công bên dưới.</p>`;
+          document.getElementById('manualLogin').open = true;
+        } else {
+          el.innerHTML = '<button class="google-btn" onclick="startGoogleLogin()">Đăng nhập</button>';
+        }
+        return;
+      }
+      el.innerHTML = '';
+      google.accounts.id.renderButton(el, { type: 'standard', theme: 'outline', size: 'large', text: 'continue_with', shape: 'pill', locale: 'vi' });
+    }
+
+    function onGisLoaded() {
+      if (state.user.loggedIn) return;
+      if (state.page === 'home') renderHomePage();
+      if (!document.getElementById('authModal').classList.contains('hidden')) renderGoogleButton('authGoogleBtn');
+      try { if (initGoogleSignIn()) google.accounts.id.prompt(); } catch {} // gợi ý đăng nhập một chạm
+    }
+
+    function decodeJwt(t) {
+      const b = t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      return JSON.parse(decodeURIComponent(atob(b).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+    }
+
+    function handleGoogleCredential(resp) {
+      try {
+        const p = decodeJwt(resp.credential);
+        applyLoginResult({ name: p.name || p.given_name || 'Người dùng Google', email: p.email || '', avatar: p.picture || '', age: null, keepAge: true });
+        showToast(`Xin chào, ${p.given_name || p.name || 'bạn'}!`);
+      } catch {
+        showToast('Không đọc được thông tin tài khoản Google.', 'error');
+      }
+    }
+
+    function startGoogleLogin() {
+      document.getElementById('login_name').value = state.user.name || '';
+      document.getElementById('login_email').value = state.user.email || '';
+      document.getElementById('login_age').value = state.user.age || '';
+      document.getElementById('authModal').classList.remove('hidden');
+      renderGoogleButton('authGoogleBtn');
+    }
+
+
+    function completeLocalGoogleLogin() {
+      const name = document.getElementById('login_name').value.trim();
+      const email = document.getElementById('login_email').value.trim();
+      const ageRaw = document.getElementById('login_age').value.trim();
+      const age = ageRaw ? Number(ageRaw) : null;
+      if (!name) { showToast('Vui lòng nhập tên của bạn!', 'error'); document.getElementById('login_name').focus(); return; }
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Email chưa đúng định dạng.', 'error'); document.getElementById('login_email').focus(); return; }
+      if (ageRaw && !validAge(age)) { showToast('Tuổi phải là số nguyên từ 14 đến 20.', 'error'); document.getElementById('login_age').focus(); return; }
+      applyLoginResult({ name, email, avatar: '', age });
+    }
+
+    function applyLoginResult({ name, email, avatar, age, keepAge }) {
+      state.user.loggedIn = true;
+      state.user.name = name;
+      state.user.email = email;
+      state.user.avatar = avatar;
+      if (age) {
+        if (age !== state.user.age) { state.user.age = age; state.activeYear = ageToClass(age); }
+      } else if (!keepAge) {
+        state.user.age = null; // xóa tuổi ở ô nhập thì xóa thật
+      }
+      saveState();
+      closeModal('authModal');
+      renderTopUser();
+      if (!state.user.onboarded) openOnboardingModal();
+      else renderCurrentPage(true);
+    }
+
+    function openOnboardingModal() {
+      document.getElementById('ob_ageBox').classList.toggle('hidden', Boolean(state.user.age));
+      document.getElementById('ob_closeBtn').classList.toggle('hidden', !state.user.onboarded);
+      document.getElementById('ob_age').value = state.user.age || 16;
+      document.getElementById('ob_block').value = state.settings.examBlock;
+      document.getElementById('ob_title').value = state.settings.targetTitle;
+      document.getElementById('ob_alert').value = state.settings.alertScore;
+      document.getElementById('ob_high').value = state.settings.highScore;
+      document.getElementById('ob_fluc').value = state.settings.flucWarnPct;
+
+      const grid = document.getElementById('ob_electivesGrid');
+      grid.innerHTML = ELECTIVE_POOL.map(sub => {
+        const checked = state.settings.electives.includes(sub) ? 'checked' : '';
+        return `<label class="check-chip"><input type="checkbox" value="${sub}" ${checked}> ${sub}</label>`;
+      }).join('');
+
+      document.getElementById('onboardingModal').classList.remove('hidden');
+    }
+
+    function readThresholds(a, h, f) {
+      const raw = [a, h, f].map(id => document.getElementById(id).value.trim());
+      const [al, hi, fl] = raw.map(Number);
+      if (raw[0] === '' || raw[1] === '' || !isFinite(al) || !isFinite(hi) || al < 0 || hi > 10 || al >= hi) {
+        showToast('Mức Báo động phải nhỏ hơn mức Cao và nằm trong khoảng 0 – 10.', 'error');
+        return null;
+      }
+      if (raw[2] === '' || !isFinite(fl) || fl < 5 || fl > 100) {
+        showToast('Ngưỡng dao động phải từ 5% đến 100%.', 'error');
+        return null;
+      }
+      return { alertScore: al, highScore: hi, flucWarnPct: fl };
+    }
+
+    function finishOnboarding() {
+      let age = state.user.age;
+      if (!age) {
+        age = Number(document.getElementById('ob_age').value);
+        if (!validAge(age)) { showToast('Tuổi phải là số nguyên từ 14 đến 20.', 'error'); return; }
+      }
+      const selected = [...document.querySelectorAll('#ob_electivesGrid input:checked')].map(i => i.value);
+      if (selected.length < 2) { showToast('Hãy chọn ít nhất 2 môn lựa chọn (chương trình GDPT 2018 thường chọn 5 môn).', 'error'); return; }
+      const th = readThresholds('ob_alert', 'ob_high', 'ob_fluc');
+      if (!th) return;
+      if (!state.user.age) { state.user.age = age; state.activeYear = ageToClass(age); }
+      Object.assign(state.settings, th, {
+        electives: ELECTIVE_POOL.filter(x => selected.includes(x)),
+        examBlock: document.getElementById('ob_block').value,
+        targetTitle: document.getElementById('ob_title').value
+      });
+      state.user.onboarded = true;
+      saveState();
+      closeModal('onboardingModal');
+      renderCurrentPage(true);
+    }
+
+    // ==================== PAGE: HOME ====================
+    function setHomeMode(mode) {
+      state._homeModeTouched = true;
+      state.homeMode = mode;
+      saveState();
+      renderHomePage();
+    }
+
+    function renderHomePage() {
+      const u = state.user;
+      const yr = state.activeYear;
+      const subjects = getActiveSubjects();
+
+      // Greeting Banner
+      document.getElementById('heroGreeting').textContent = u.loggedIn
+        ? `Xin chào, ${u.name || 'bạn'}!`
+        : 'Xin chào người dùng!';
+      document.getElementById('heroSub').textContent = u.loggedIn
+        ? `Chúc bạn học tập thật tốt! Hiện bạn đang theo dõi bảng điểm Lớp ${yr}.`
+        : 'Hãy đăng nhập bằng Google để lưu hồ sơ, xác định lớp theo tuổi và thiết lập môn học.';
+
+      const badges = [];
+      if (u.age) badges.push(`<span class="hero-badge">🎂 ${u.age} tuổi • Lớp ${ageToClass(u.age)}</span>`);
+      badges.push(`<span class="hero-badge">🎯 Khối thi: ${state.settings.examBlock}</span>`);
+      badges.push(`<span class="hero-badge">🏅 Mục tiêu: ${state.settings.targetTitle === 'HSXX' ? 'Học sinh Xuất sắc' : 'Học sinh Giỏi'}</span>`);
+      badges.push(`<span class="hero-badge">📚 ${subjects.length} môn tính điểm</span>`);
+      document.getElementById('heroBadges').innerHTML = badges.join('');
+
+      document.getElementById('heroAuthAction').innerHTML = u.loggedIn
+        ? `<button class="btn btn-soft" onclick="openOnboardingModal()">✏️ Thiết lập lại môn/khối</button>`
+        : '<div id="heroGoogleBtn"></div>';
+      if (!u.loggedIn) renderGoogleButton('heroGoogleBtn');
+
+      // Compute subject averages for active Home mode
+      const hasHK2Scores = subjects.some(n => { const d=peekSubjectData(yr,n).hk2; return [...d.tx,d.gk,d.ck].some(isNum); });
+      const allYearFinal = subjects.length > 0 && subjects.every(n => { const d=peekSubjectData(yr,n); return isNum(d.hk1.ck) && isNum(d.hk2.ck); });
+      if (!state._homeModeTouched && !state.homeMode) state.homeMode = 'hk1';
+      const mode = state.homeMode || 'hk1';
+      document.querySelectorAll('[data-homemode]').forEach(b => b.classList.toggle('active', b.dataset.homemode === mode));
+      document.getElementById('homeYearLabel').textContent = `Lớp ${yr}`;
+
+      const periodUnavailable = (mode === 'hk2' && !hasHK2Scores) || (mode === 'year' && !allYearFinal);
+      const subAvgs = subjects.map(name => {
+        const d = peekSubjectData(yr, name);
+        let res;
+        if (mode === 'hk1') res = calcSemester(d.hk1);
+        else if (mode === 'hk2') res = calcSemester(d.hk2);
+        else res = calcAnnual(d);
+        return { name, avg: periodUnavailable ? null : res.avg, missingCK: res.missingCK, isProvisional: res.isProvisional, data: d };
+      });
+
+      if (periodUnavailable) {
+        const label = mode === 'hk2' ? 'Học kì 2' : 'Cuối năm';
+        document.getElementById('homeTiersGrid').innerHTML = '';
+        document.getElementById('homeFlucList').innerHTML = `<div class="chart-annotation info">Chưa có dữ liệu ${label}.</div>`;
+        document.getElementById('homeRankTitle').textContent = 'Chưa có thông tin';
+        document.getElementById('homeRankDesc').textContent = mode === 'year'
+          ? 'Kết quả cuối năm sẽ hiển thị sau khi hoàn thành và nhập điểm Học kì 2.'
+          : 'Chưa có điểm Học kì 2. Hãy nhập điểm khi học kì bắt đầu.';
+        document.getElementById('homeGpaLine').textContent = 'ĐTB chung: Chưa có thông tin';
+        document.getElementById('adviceTitle').textContent = '🎯 Gợi ý học tập sẽ xuất hiện khi có dữ liệu';
+        document.getElementById('adviceList').innerHTML = '<li>Tiếp tục cập nhật điểm để theo dõi tiến độ học tập.</li>';
+        document.getElementById('homeSubjectsGrid').innerHTML = subjects.map(name => `<div class="sub-mini-card"><span>${name}</span><span class="pill pill-empty">Chưa có thông tin</span></div>`).join('');
+        return;
+      }
+
+      // 3 Alert Tiers
+      const alertLimit = Number(state.settings.alertScore);
+      const highLimit = Number(state.settings.highScore);
+
+      const dangerList = subAvgs.filter(s => s.avg !== null && s.avg < alertLimit);
+      const warnList = subAvgs.filter(s => s.avg !== null && s.avg >= alertLimit && s.avg < highLimit);
+      const goodList = subAvgs.filter(s => s.avg !== null && s.avg >= highLimit);
+
+      const renderTierCard = (cls, title, ruleText, list) => `
+        <div class="tier-card ${cls}">
+          <div class="tier-head">
+            <div class="tier-title">${title}</div>
+            <span class="tier-rule">${ruleText}</span>
+          </div>
+          <div class="tier-list">
+            ${list.length
+              ? list.map(s => `<div class="tier-item"><span>${s.name}</span><span class="pill ${pillClass(s.avg)}">${s.avg.toFixed(1)}</span></div>`).join('')
+              : `<div class="tier-empty">Không có môn nào trong nhóm này</div>`}
+          </div>
+        </div>
+      `;
+
+      document.getElementById('homeTiersGrid').innerHTML =
+        renderTierCard('danger', '🚨 Môn có mức điểm báo động', `< ${alertLimit}`, dangerList) +
+        renderTierCard('warn', '⚠️ Môn học cần chú ý', `${alertLimit} – < ${highLimit}`, warnList) +
+        renderTierCard('good', '🌟 Môn học mức điểm cao', `≥ ${highLimit}`, goodList);
+
+      // Fluctuation Amplitude Section
+      const flucWarn = Number(state.settings.flucWarnPct);
+      document.getElementById('flucThresholdLabel').textContent = `${flucWarn}%`;
+
+      document.getElementById('homeFlucList').innerHTML = subAvgs.map(s => {
+        const pts = getSubjectScoresArray(s.data, mode);
+        if (pts.length < 2) {
+          return `
+            <div class="fluc-item">
+              <div class="fluc-top">
+                <span class="fluc-name">${s.name}</span>
+                <span class="fluc-pct" style="color:var(--muted)">Chưa đủ dữ liệu</span>
+              </div>
+              <div class="fluc-track"><div class="fluc-fill" style="width:0%"></div></div>
+              <div class="fluc-meta"><span>Cần ít nhất 2 cột điểm để đo dao động</span></div>
+            </div>
+          `;
+        }
+        const maxV = Math.max(...pts);
+        const minV = Math.min(...pts);
+        const avgV = pts.reduce((a, b) => a + b, 0) / pts.length;
+        const pct = avgV > 0 ? Math.round(((maxV - minV) / avgV) * 1000) / 10 : 0;
+        const barW = Math.min(100, pct);
+
+        let barColor = '#16a34a'; // Green
+        let statusTag = 'Ổn định';
+        if (pct >= flucWarn) {
+          barColor = '#dc2626'; // Red
+          statusTag = '⚠️ Cảnh báo dao động cao';
+        } else if (pct >= flucWarn * 0.6) {
+          barColor = '#d97706'; // Yellow
+          statusTag = 'Dao động trung bình';
+        }
+
+        return `
+          <div class="fluc-item">
+            <div class="fluc-top">
+              <span class="fluc-name">${s.name}</span>
+              <span class="fluc-pct" style="color:${barColor}">${pct.toFixed(1)}%</span>
+            </div>
+            <div class="fluc-track">
+              <div class="fluc-fill" style="width:${barW}%; background:${barColor};"></div>
+            </div>
+            <div class="fluc-meta">
+              <span>Thấp nhất: ${minV} • Cao nhất: ${maxV} • TB bài KT: ${avgV.toFixed(1)}</span>
+              <strong style="color:${barColor}">${statusTag}</strong>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Classification & Title Pull Advice
+      const validAvgs = subAvgs.filter(s => s.avg !== null);
+      const gpa = validAvgs.length
+        ? Math.round(validAvgs.reduce((a, s) => a + Math.round(s.avg * 10), 0) / validAvgs.length) / 10
+        : null;
+
+      document.getElementById('homeGpaLine').textContent = `ĐTB chung các môn: ${gpa !== null ? gpa.toFixed(1) : '--'}`;
+
+      // Xếp loại theo TT 22/2021: >=6 môn đạt mức, 1 trong 3 môn Toán/Văn/Ngoại ngữ đạt mức, không môn nào dưới sàn, môn nhận xét đều "Đạt"
+      const pfData0 = state.passFail[yr] || {};
+      const pfFail = MANDATORY_PASSFAIL.filter(m => pfData0[m] === 'Chưa đạt');
+      const cnt = t => validAvgs.filter(s => s.avg >= t).length;
+      const minAvg = validAvgs.length ? Math.min(...validAvgs.map(s => s.avg)) : 0;
+      const mainMax = Math.max(-1, ...validAvgs.filter(s => MAIN3.includes(s.name)).map(s => s.avg));
+      const mainOK = mainMax >= 8.0;
+      const anyProv = validAvgs.some(s => s.isProvisional);
+
+      let rankLabel = 'Chưa xếp loại';
+      let rankDesc = `Mới nhập điểm ${validAvgs.length}/${subAvgs.length} môn.`;
+
+      if (subAvgs.length < 6) {
+        rankDesc = 'Cần ít nhất 6 môn tính điểm để xếp loại (vào Setting để chọn thêm môn).';
+      } else if (validAvgs.length === subAvgs.length) {
+        if (pfFail.length) {
+          rankLabel = '⚠️ Chưa đạt';
+          rankDesc = `Có nội dung đánh giá "Chưa đạt": ${pfFail.join(', ')}.`;
+        } else if (minAvg >= 6.5 && cnt(9) >= 6 && mainOK) {
+          rankLabel = '🏆 Học sinh Xuất sắc (HSXX)';
+          rankDesc = `Mọi môn ≥ 6.5, ${cnt(9)} môn ≥ 9.0 và có môn Toán/Văn/Ngoại ngữ ≥ 8.0.`;
+        } else if (minAvg >= 6.5 && cnt(8) >= 6 && mainOK) {
+          rankLabel = '🌟 Học sinh Giỏi (HSG)';
+          rankDesc = `Mọi môn ≥ 6.5, ${cnt(8)} môn ≥ 8.0 và có môn Toán/Văn/Ngoại ngữ ≥ 8.0.`;
+        } else if (minAvg >= 5.0 && cnt(6.5) >= 6 && mainMax >= 6.5) {
+          rankLabel = '👍 Học sinh Khá';
+          rankDesc = `Mọi môn ≥ 5.0, ${cnt(6.5)} môn ≥ 6.5 và có môn Toán/Văn/Ngoại ngữ ≥ 6.5.`;
+        } else if (minAvg >= 3.5 && cnt(5) >= 6 && mainMax >= 5.0) {
+          rankLabel = '✔️ Đạt';
+          rankDesc = `Mọi môn ≥ 3.5, ${cnt(5)} môn ≥ 5.0.`;
+        } else {
+          rankLabel = '⚠️ Chưa đạt';
+          rankDesc = 'Cần cải thiện các môn dưới chuẩn.';
+        }
+        if (anyProv) rankDesc += ' (Tạm tính — còn thiếu điểm Giữa kì/Cuối kì.)';
+      }
+
+      document.getElementById('homeRankTitle').textContent = rankLabel;
+      document.getElementById('homeRankDesc').textContent = rankDesc;
+
+      // Advice to reach targetTitle (HSXX or HSG)
+      const target = state.settings.targetTitle || 'HSXX';
+      const targetHigh = target === 'HSXX' ? 9.0 : 8.0;
+      const targetName = target === 'HSXX' ? 'Học sinh Xuất sắc (HSXX)' : 'Học sinh Giỏi (HSG)';
+      document.getElementById('adviceTitle').textContent = `🎯 Cần kéo gì để đạt danh hiệu ${targetName}?`;
+
+      const adviceItems = [];
+      const missingSubs = subAvgs.filter(s => s.avg === null);
+      if (missingSubs.length > 0) {
+        adviceItems.push(`Bạn còn <strong>${missingSubs.length} môn chưa có điểm</strong> (${missingSubs.map(s => s.name).join(', ')}). Hãy nhập thêm để hệ thống tính chính xác.`);
+      }
+
+      // Condition 1: All >= 6.5
+      const below65 = subAvgs.filter(s => s.avg !== null && s.avg < 6.5);
+      below65.forEach(s => {
+        const diff = (6.5 - s.avg).toFixed(1);
+        adviceItems.push(`<strong>${s.name}</strong> (hiện ${s.avg.toFixed(1)}): cần kéo thêm <strong style="color:var(--danger)">+${diff} điểm</strong> để đạt mức sàn 6.5.`);
+      });
+
+      if (pfFail.length) adviceItems.push(`Cần chuyển <strong>${pfFail.join(', ')}</strong> sang <strong>Đạt</strong> (bắt buộc để đạt học lực Khá/Tốt).`);
+      const mainSubs = subAvgs.filter(s => MAIN3.includes(s.name));
+      if (mainSubs.length && mainSubs.every(s => s.avg !== null) && !mainOK) {
+        adviceItems.push('Cần ít nhất <strong>1 trong 3 môn Toán, Ngữ văn, Ngoại ngữ</strong> đạt từ <strong>8.0</strong>.');
+      }
+
+      // Condition 2: At least 6 subjects >= targetHigh
+      const reachedHigh = subAvgs.filter(s => s.avg !== null && s.avg >= targetHigh);
+      const needMoreCount = Math.max(0, 6 - reachedHigh.length);
+
+      if (needMoreCount > 0) {
+        const candidates = subAvgs
+          .filter(s => s.avg !== null && s.avg < targetHigh)
+          .sort((a, b) => b.avg - a.avg)
+          .slice(0, needMoreCount);
+
+        if (candidates.length > 0) {
+          const desc = candidates.map(c => {
+            const diff = (targetHigh - c.avg).toFixed(1);
+            return `<strong>${c.name}</strong> (${c.avg.toFixed(1)} → ${targetHigh.toFixed(1)}, cần <strong>+${diff}</strong>)`;
+          }).join('; ');
+          adviceItems.push(`Hiện có <strong>${reachedHigh.length}/6 môn ≥ ${targetHigh.toFixed(1)}</strong>. Để đủ 6 môn, nên ưu tiên kéo ${needMoreCount} môn gần nhất: ${desc}.`);
+        }
+      } else if (below65.length === 0 && missingSubs.length === 0 && mainOK && !pfFail.length) {
+        adviceItems.push(`🎉 Tuyệt vời! Điểm số hiện tại của bạn đã <strong>đạt đủ điều kiện danh hiệu ${targetName}</strong>!`);
+      }
+
+      document.getElementById('adviceList').innerHTML = adviceItems.map(i => `<li>${i}</li>`).join('');
+
+      document.getElementById('homeSubjectsGrid').innerHTML = subAvgs.map(s => `
+        <div class="sub-mini-card">
+          <span>${s.name}</span>
+          <span class="pill ${pillClass(s.avg)}">${s.avg !== null ? s.avg.toFixed(1) + (s.isProvisional ? '*' : '') : '--'}</span>
+        </div>
+      `).join('');
+    }
+
+    // ==================== PAGE: GRADEBOOK ====================
+    function setGradeView(view) {
+      state.gradeView = view;
+      saveState();
+      renderGradebookPage();
+    }
+
+    function readGradeCell(subName, sem, type, idx) {
+      const d = peekSubjectData(state.activeYear, subName)[sem];
+      return type === 'tx' ? d.tx[idx] : d[type];
+    }
+
+    function refreshGradeBadges(subName) {
+      const d = peekSubjectData(state.activeYear, subName);
+      const id = slugify(subName);
+      [['gb-hk1-', calcSemester(d.hk1)], ['gb-hk2-', calcSemester(d.hk2)], ['gb-yr-', calcAnnual(d)]].forEach(([p, r]) => {
+        const el = document.getElementById(p + id);
+        if (el) el.innerHTML = avgPillHTML(r.avg, r.isProvisional);
+      });
+    }
+
+    function onGradeCellInput(el, subName, sem, type, txIdx) {
+      el._ctx = { subName, sem, type, txIdx };
+      const parsed = parseScore(el.value);
+      el.classList.toggle('invalid', !parsed.valid);
+      el.title = parsed.valid ? '' : 'Điểm phải là số từ 0 đến 10';
+      if (!parsed.valid) return;
+      const d = ensureSubjectData(state.activeYear, subName);
+      if (type === 'tx') d[sem].tx[txIdx] = parsed.value;
+      else d[sem][type] = parsed.value;
+      saveState();
+      refreshGradeBadges(subName);
+    }
+
+    // Rời ô: chuẩn hóa hiển thị, nếu nhập sai thì trả về giá trị đang lưu (không để ô và dữ liệu lệch nhau)
+    function onGradeCellCommit(el) {
+      const c = el._ctx;
+      if (!c) return;
+      if (!parseScore(el.value).valid) showToast('Điểm không hợp lệ (0 – 10), đã khôi phục giá trị cũ.', 'error');
+      const stored = readGradeCell(c.subName, c.sem, c.type, c.txIdx);
+      el.value = stored === null || stored === undefined ? '' : stored;
+      el.classList.remove('invalid');
+      el.title = '';
+      el._ctx = null;
+    }
+
+    function avgPillHTML(avg, provisional) {
+      if (avg === null) return `<span class="pill pill-empty">--</span>`;
+      return `<span class="pill ${pillClass(avg)}">${avg.toFixed(1)}${provisional ? '*' : ''}</span>`;
+    }
+
+    function togglePassFail(subName, val) {
+      if (!state.passFail[state.activeYear]) state.passFail[state.activeYear] = {};
+      state.passFail[state.activeYear][subName] = val;
+      saveState();
+    }
+
+    function renderGradebookPage() {
+      const yr = state.activeYear;
+      const view = state.gradeView || 'hk1';
+      const subjects = getActiveSubjects();
+      document.getElementById('gradePageYear').textContent = `Lớp ${yr}`;
+      const hasHK2 = subjects.some(n => { const d=peekSubjectData(yr,n).hk2; return [...d.tx,d.gk,d.ck].some(isNum); });
+      const allFinal = subjects.length > 0 && subjects.every(n => { const d=peekSubjectData(yr,n); return isNum(d.hk1.ck) && isNum(d.hk2.ck); });
+      document.querySelectorAll('[data-gview]').forEach(b => {
+        b.classList.toggle('active', b.dataset.gview === view);
+      });
+
+      const container = document.getElementById('gradeTablesContainer');
+
+      const renderSemTable = (semKey, title) => {
+        let rows = subjects.map(subName => {
+          const d = peekSubjectData(yr, subName)[semKey];
+          const res = calcSemester(d);
+          const ann = calcAnnual(peekSubjectData(yr, subName));
+          const idBase = slugify(subName);
+          const v = x => (x === null || x === undefined ? '' : x);
+          return `
+            <tr>
+              <td class="left" style="font-weight:700;">${subName}</td>
+              ${[0,1,2,3].map(i => `<td><input class="score-input" type="text" inputmode="decimal" placeholder="-" value="${v(d.tx[i])}" oninput="onGradeCellInput(this,'${escapeAttr(subName)}','${semKey}','tx',${i})" onblur="onGradeCellCommit(this)" /></td>`).join('')}
+              <td><input class="score-input gk" type="text" inputmode="decimal" placeholder="-" value="${v(d.gk)}" oninput="onGradeCellInput(this,'${escapeAttr(subName)}','${semKey}','gk',0)" onblur="onGradeCellCommit(this)" /></td>
+              <td><input class="score-input ck" type="text" inputmode="decimal" placeholder="-" value="${v(d.ck)}" oninput="onGradeCellInput(this,'${escapeAttr(subName)}','${semKey}','ck',0)" onblur="onGradeCellCommit(this)" /></td>
+              <td id="gb-${semKey}-${idBase}">${avgPillHTML(res.avg, res.isProvisional)}</td>
+              ${semKey === 'hk2' && allFinal ? `<td id="gb-yr-${idBase}">${avgPillHTML(ann.avg, ann.isProvisional)}</td>` : ''}
+            </tr>
+          `;
+        }).join('');
+
+        return `
+          <h3 style="margin:14px 0 8px; font-size:0.98rem;">${title}</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="left" style="width:200px;">Môn học</th>
+                  <th>TX1</th><th>TX2</th><th>TX3</th><th>TX4</th>
+                  <th>Giữa kì (×2)</th>
+                  <th>Cuối kì (×3)</th>
+                  <th>ĐTB ${semKey === 'hk1' ? 'HK1' : 'HK2'}</th>
+                  ${semKey === 'hk2' && allFinal ? '<th>ĐTB Cả năm</th>' : ''}
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        `;
+      };
+
+      let html = '';
+      if (view === 'hk1') {
+        html = renderSemTable('hk1', '📘 Học kì 1');
+      } else if (view === 'hk2') {
+        html = hasHK2
+          ? renderSemTable('hk2', '📗 Học kì 2')
+          : '<div class="chart-annotation info">Chưa có thông tin điểm Học kì 2. Khi có điểm, bảng sẽ tự động cập nhật tại đây.</div>';
+      } else if (view === 'year') {
+        html = allFinal ? `
+          <h3 style="margin:14px 0 8px; font-size:0.98rem;">🏆 Bảng điểm tổng kết cuối năm (HK2 hệ số 2)</h3>
+          <div class="table-wrap"><table>
+            <thead><tr><th class="left">Môn học</th><th>ĐTB HK1</th><th>ĐTB HK2</th><th>ĐTB Cả năm</th></tr></thead>
+            <tbody>${subjects.map(subName => {
+              const d = peekSubjectData(yr, subName);
+              const a = calcSemester(d.hk1), b = calcSemester(d.hk2), y = calcAnnual(d);
+              return `<tr><td class="left" style="font-weight:700;">${subName}</td><td>${avgPillHTML(a.avg,a.isProvisional)}</td><td>${avgPillHTML(b.avg,b.isProvisional)}</td><td>${avgPillHTML(y.avg,y.isProvisional)}</td></tr>`;
+            }).join('')}</tbody>
+          </table></div>`
+          : '<div class="chart-annotation info">Chưa có thông tin kết quả cuối năm. Bảng tổng kết sẽ hiển thị sau khi hoàn thành và nhập điểm Cuối kì HK2 cho tất cả môn học.</div>';
+      }
+      container.innerHTML = html + '<p style="margin-top:10px; font-size:0.78rem; color:var(--muted);">* ĐTB tạm tính: còn thiếu điểm Giữa kì / Cuối kì hoặc thiếu một học kì.</p>';
+
+      // Mandatory Pass/Fail subjects
+      const pfData = state.passFail[yr] || {};
+      document.getElementById('passFailSubjectsBox').innerHTML = `
+        <h3 style="margin-bottom:8px; font-size:0.95rem;">📌 Các môn học &amp; hoạt động đánh giá Đạt / Chưa đạt</h3>
+        <div class="subjects-mini-grid">
+          ${MANDATORY_PASSFAIL.map(m => {
+            const val = pfData[m] || 'Đạt';
+            return `
+              <div class="sub-mini-card" style="flex-direction:column; align-items:flex-start; gap:6px;">
+                <span style="font-size:0.82rem;">${m}</span>
+                <select class="input" style="width:100%; padding:5px 8px; font-size:0.82rem;" onchange="togglePassFail('${escapeAttr(m)}', this.value)">
+                  <option value="Đạt" ${val === 'Đạt' ? 'selected' : ''}>✔️ Đạt</option>
+                  <option value="Chưa đạt" ${val === 'Chưa đạt' ? 'selected' : ''}>❌ Chưa đạt</option>
+                </select>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    // ==================== PAGE: CHARTS ====================
+    function setBarMode(mode) {
+      state.barMode = mode;
+      saveState();
+      renderChartsPage();
+    }
+
+    const barLabelPlugin = {
+      id: 'barLabelPlugin',
+      afterDatasetsDraw(chart) {
+        const { ctx, data } = chart;
+        const ds = data.datasets[0];
+        if (!ds) return;
+        const flags = ds.provisionalFlags || [];
+        ctx.save();
+        ctx.font = '700 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        chart.getDatasetMeta(0).data.forEach((bar, i) => {
+          const val = ds.data[i];
+          if (val !== null && val !== undefined) {
+            ctx.fillStyle = flags[i] ? '#b45309' : '#1e293b';
+            ctx.fillText(val.toFixed(1) + (flags[i] ? '*' : ''), bar.x, bar.y - 4);
+          }
+        });
+        ctx.restore();
+      }
+    };
+
+    function toggleSubjectChart(idx, button) {
+      const panel = document.getElementById(`subject-panel-${idx}`);
+      const opening = panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', !opening);
+      button.setAttribute('aria-expanded', String(opening));
+      button.lastElementChild.textContent = opening ? '−' : '＋';
+      if (opening) {
+        const existing = lineCharts.find(c => c.canvas && c.canvas.id === `sub-line-${idx}`);
+        if (existing) existing.resize();
+        else renderSingleLineChart(idx);
+      }
+    }
+
+    function renderSingleLineChart(idx) {
+      const subjects = getActiveSubjects(), name = subjects[idx];
+      if (!name || typeof Chart === 'undefined') return;
+      const d = peekSubjectData(state.activeYear, name);
+      const labels = ['TX1','TX2','TX3','TX4','GK','CK','TX1','TX2','TX3','TX4','GK','CK'];
+      const series = [...d.hk1.tx,d.hk1.gk,d.hk1.ck,...d.hk2.tx,d.hk2.gk,d.hk2.ck];
+      const pts = series.filter(isNum);
+      const tight = document.getElementById('zoomToggle').checked;
+      const yMin = tight && pts.length ? Math.max(0,Math.floor(Math.min(...pts)-1)) : 0;
+      const yMax = tight && pts.length ? Math.min(10,Math.ceil(Math.max(...pts)+1)) : 10;
+      const color = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#664930';
+      const chart = new Chart(document.getElementById(`sub-line-${idx}`).getContext('2d'), {
+        type:'line', data:{labels,datasets:[{data:series,borderColor:color,backgroundColor:'rgba(0,0,0,.05)',borderWidth:2.2,tension:.25,fill:true,spanGaps:true,pointRadius:4}]},
+        options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:yMin,max:yMax,ticks:{stepSize:tight?.5:2}},x:{ticks:{font:{size:10}},grid:{display:false}}},plugins:{legend:{display:false}}}
+      });
+      lineCharts.push(chart);
+    }
+
+    function renderChartsPage() {
+      const yr = state.activeYear;
+      const mode = state.barMode || 'year';
+      const subjects = getActiveSubjects();
+
+      document.querySelectorAll('[data-barmode]').forEach(b => b.classList.toggle('active', b.dataset.barmode === mode));
+
+      // 1. Bar chart
+      const values = [];
+      const flags = [];
+      const missingCKNames = [];
+      let hasAny = false;
+
+      subjects.forEach(name => {
+        const d = peekSubjectData(yr, name);
+        const res = mode === 'hk1' ? calcSemester(d.hk1) : mode === 'hk2' ? calcSemester(d.hk2) : calcAnnual(d);
+        values.push(res.avg);
+        if (res.avg !== null) hasAny = true;
+        const isProv = res.avg !== null && res.isProvisional;
+        flags.push(isProv);
+        if (isProv) missingCKNames.push(name);
+      });
+
+      const anno = document.getElementById('barAnnotation');
+      const modeText = mode === 'hk1' ? 'Học kì 1' : mode === 'hk2' ? 'Học kì 2' : 'Cả năm';
+      if (!hasAny) {
+        anno.className = 'chart-annotation info';
+        anno.innerHTML = `<span>ℹ️</span><div>Chưa có điểm cho ${modeText} (Lớp ${yr}). Hãy bấm nút <strong>+</strong> ở góc phải dưới hoặc vào Bảng điểm để nhập.</div>`;
+      } else if (missingCKNames.length > 0) {
+        anno.className = 'chart-annotation warning';
+        anno.innerHTML = `<span>⚠️</span><div><strong>Chú thích biểu đồ (${modeText}):</strong> Các môn <strong>${missingCKNames.join(', ')}</strong> chưa đủ điểm (thiếu Giữa kì/Cuối kì hoặc thiếu học kì) nên cột có dấu <strong>*</strong> là <strong>điểm TẠM TÍNH</strong>.</div>`;
+      } else {
+        anno.className = 'chart-annotation success';
+        anno.innerHTML = `<span>✅</span><div>Tất cả các môn (${modeText}) đã có đủ điểm Cuối kì chính thức.</div>`;
+      }
+
+      if (typeof Chart === 'undefined') {
+        anno.className = 'chart-annotation warning';
+        anno.innerHTML = '<span>⚠️</span><div>Không tải được thư viện biểu đồ (cần Internet). Hãy tải lại trang khi có mạng.</div>';
+      }
+      if (typeof Chart !== 'undefined') {
+        const primaryCss = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#664930';
+        const bgColors = values.map((v, i) => {
+          if (v === null) return 'rgba(148,163,184,0.25)';
+          if (flags[i]) return 'rgba(245, 158, 11, 0.45)';
+          return primaryCss;
+        });
+
+        const ctx = document.getElementById('barChartCanvas').getContext('2d');
+        if (barChart) barChart.destroy();
+        barChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: subjects.map(wrapLabel),
+            datasets: [{
+              label: 'ĐTB',
+              data: values,
+              backgroundColor: bgColors,
+              borderRadius: 8,
+              provisionalFlags: flags
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: { padding: { top: 22 } },
+            scales: {
+              y: { min: 0, max: 10, ticks: { stepSize: 1 } },
+              x: { grid: { display: false } }
+            },
+            plugins: { legend: { display: false } }
+          },
+          plugins: [barLabelPlugin]
+        });
+      }
+
+      // 2. Danh sách biểu đồ dạng thu gọn; chỉ vẽ khi người dùng mở môn
+      const grid = document.getElementById('lineChartsGrid');
+      lineCharts.forEach(c => c && c.destroy());
+      lineCharts = [];
+      grid.innerHTML = subjects.map((name, idx) => {
+        const d = peekSubjectData(yr, name), ann = calcAnnual(d);
+        return `<div>
+          <button class="subject-chart-toggle" type="button" aria-expanded="false" onclick="toggleSubjectChart(${idx}, this)">
+            <span>📈 ${escapeHtml(name)} <small style="font-weight:500;color:var(--muted)"> · ĐTB ${ann.avg === null ? '--' : ann.avg.toFixed(1)}</small></span><span>＋</span>
+          </button>
+          <div class="subject-chart-panel hidden" id="subject-panel-${idx}"><canvas id="sub-line-${idx}"></canvas></div>
+        </div>`;
+      }).join('');
+
+    }
+
+    // ==================== PAGE: TIMETABLE ====================
+    let tkbBlobUrl = null;
+
+    function dataUrlToBlobUrl(dataUrl) {
+      try {
+        const [h, b] = dataUrl.split(',');
+        const mime = (h.match(/:(.*?);/) || [])[1] || 'application/octet-stream';
+        const bin = atob(b), arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        return URL.createObjectURL(new Blob([arr], { type: mime }));
+      } catch { return dataUrl; }
+    }
+
+    function renderTimetablePage() {
+      const yr = state.activeYear;
+      document.getElementById('tkbYearLabel').textContent = `Lớp ${yr}`;
+      const tkb = state.timetables[yr];
+      const emptyEl = document.getElementById('tkbEmptyState');
+      const dispEl = document.getElementById('tkbDisplayBox');
+      const delBtn = document.getElementById('tkbDeleteBtn');
+      if (tkbBlobUrl && tkbBlobUrl.startsWith('blob:')) URL.revokeObjectURL(tkbBlobUrl);
+      tkbBlobUrl = null;
+      emptyEl.classList.toggle('hidden', Boolean(tkb));
+      dispEl.classList.toggle('hidden', !tkb);
+      delBtn.classList.toggle('hidden', !tkb);
+      if (!tkb) { dispEl.innerHTML = ''; return; }
+      tkbBlobUrl = dataUrlToBlobUrl(tkb.dataUrl);
+      const media = (tkb.type || '').includes('pdf')
+        ? `<iframe src="${tkbBlobUrl}" title="Thời khóa biểu" style="width:100%; height:620px; border:1px solid var(--border); border-radius:12px;"></iframe>`
+        : `<img src="${tkbBlobUrl}" alt="Thời khóa biểu" class="tkb-preview" />`;
+      dispEl.innerHTML = media + `<p style="text-align:center; font-size:0.8rem; color:var(--muted); margin-top:10px;">${escapeHtml(tkb.name || '')} • <a href="${tkbBlobUrl}" target="_blank" rel="noopener">Mở toàn màn hình</a></p>`;
+    }
+
+    function handleTimetableUpload(event) {
+      const f = event.target.files[0];
+      event.target.value = '';
+      if (f) processTimetableFile(f);
+    }
+
+    function processTimetableFile(file) {
+      const yr = state.activeYear;
+      const isPdf = file.type === 'application/pdf';
+      if (!isPdf && !file.type.startsWith('image/')) { showToast('Chỉ hỗ trợ ảnh (PNG, JPG…) hoặc file PDF.', 'error'); return; }
+      if (isPdf && file.size > 2.5 * 1024 * 1024) { showToast('File PDF quá lớn (tối đa 2,5 MB). Hãy dùng ảnh hoặc PDF nhẹ hơn.', 'error'); return; }
+      if (state.timetables[yr] && !confirm('Thay thế thời khóa biểu hiện tại bằng file mới?')) return;
+      const commit = (dataUrl, type) => {
+        const prev = state.timetables[yr];
+        state.timetables[yr] = { name: file.name, type, dataUrl };
+        if (!saveState(true)) {
+          state.timetables[yr] = prev; // hoàn tác để bộ nhớ và dữ liệu đã lưu không bị lệch
+          showToast('File quá lớn so với bộ nhớ trình duyệt. Hãy chọn file nhẹ hơn.', 'error');
+        } else {
+          showToast('Đã lưu thời khóa biểu.');
+        }
+        if (state.page === 'timetable') renderTimetablePage();
+      };
+      const reader = new FileReader();
+      reader.onerror = () => showToast('Không đọc được file.', 'error');
+      reader.onload = e => {
+        if (isPdf) { commit(e.target.result, file.type); return; }
+        const img = new Image();
+        img.onerror = () => showToast('Không đọc được ảnh.', 'error');
+        img.onload = () => {
+          const sc = Math.min(1, 1800 / Math.max(img.width, img.height));
+          const c = document.createElement('canvas');
+          c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+          const cx = c.getContext('2d');
+          cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height);
+          cx.drawImage(img, 0, 0, c.width, c.height);
+          commit(c.toDataURL('image/jpeg', 0.85), 'image/jpeg');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function deleteTimetable() {
+      if (!confirm('Xóa thời khóa biểu hiện tại?')) return;
+      state.timetables[state.activeYear] = null;
+      saveState();
+      renderTimetablePage();
+      showToast('Đã xóa thời khóa biểu.');
+    }
+
+    // ==================== PAGE: EXAMS (AUTO STUDY PLAN 1–3 WEEKS) ====================
+    function calcStudyPlan(subjectName, examDateStr, year) {
+      const latest = getLatestScore(year || state.activeYear, subjectName);
+      let daysBefore = 14;
+      let difficulty = 'Chưa có điểm (Mặc định 2 tuần)';
+
+      if (latest !== null) {
+        if (latest < 5.5) {
+          daysBefore = 21;
+          difficulty = `Khó / Cần tập trung (Điểm gần nhất: ${latest}) → Ôn trước 3 tuần`;
+        } else if (latest < 7.0) {
+          daysBefore = 14;
+          difficulty = `Trung bình (Điểm gần nhất: ${latest}) → Ôn trước 2 tuần`;
+        } else if (latest < 8.5) {
+          daysBefore = 10;
+          difficulty = `Khá (Điểm gần nhất: ${latest}) → Ôn trước 10 ngày`;
+        } else {
+          daysBefore = 7;
+          difficulty = `Vững kiến thức (Điểm gần nhất: ${latest}) → Ôn trước 1 tuần`;
+        }
+      }
+
+      const examDate = new Date(examDateStr + 'T00:00:00');
+      const startDate = new Date(examDate);
+      startDate.setDate(startDate.getDate() - daysBefore);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const diffDays = Math.round((examDate - today) / (1000 * 60 * 60 * 24));
+      const inStudyWindow = today >= startDate && today <= examDate;
+
+      return {
+        latest,
+        daysBefore,
+        difficulty,
+        startDateStr: startDate.toLocaleDateString('vi-VN'),
+        examDateStrVN: examDate.toLocaleDateString('vi-VN'),
+        diffDays,
+        inStudyWindow
+      };
+    }
+
+    function openExamModal() {
+      document.getElementById('ex_subject').innerHTML = getActiveSubjects().map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');
+      document.getElementById('ex_title').value = '';
+      const d = new Date();
+      d.setDate(d.getDate() + 14);
+      document.getElementById('ex_date').value = localDateStr(d); // ngày địa phương, không lệch múi giờ như toISOString
+      document.getElementById('ex_time').value = '07:30';
+      document.getElementById('examModal').classList.remove('hidden');
+    }
+
+    function saveNewExam() {
+      const subject = document.getElementById('ex_subject').value;
+      const type = document.getElementById('ex_type').value;
+      const title = document.getElementById('ex_title').value.trim() || `Kiểm tra ${type} ${subject}`;
+      const date = document.getElementById('ex_date').value;
+      const time = document.getElementById('ex_time').value;
+      if (!date) {
+        showToast('Vui lòng chọn ngày kiểm tra!', 'error');
+        return;
+      }
+      state.exams.push({
+        id: Date.now(),
+        year: state.activeYear,
+        subject,
+        type,
+        title,
+        date,
+        time
+      });
+      saveState();
+      closeModal('examModal');
+      renderExamsPage();
+      showToast('Đã thêm lịch kiểm tra.');
+    }
+
+    function deleteExam(id) {
+      if (!confirm('Xóa lịch kiểm tra này?')) return;
+      state.exams = state.exams.filter(e => String(e.id) !== String(id));
+      saveState();
+      renderExamsPage();
+      showToast('Đã xóa lịch kiểm tra.');
+    }
+
+    let examCalendarMonth = new Date().getMonth();
+    let examCalendarYear = new Date().getFullYear();
+    function shiftExamCalendar(delta) {
+      const d = new Date(examCalendarYear, examCalendarMonth + delta, 1);
+      examCalendarMonth = d.getMonth(); examCalendarYear = d.getFullYear();
+      renderExamCalendar(state.activeYear);
+    }
+    function renderExamCalendar(activeYear) {
+      const host = document.getElementById('examCalendar');
+      if (!host) return;
+      const first = new Date(examCalendarYear, examCalendarMonth, 1);
+      const start = new Date(examCalendarYear, examCalendarMonth, 1 - ((first.getDay()+6)%7));
+      const today = new Date(); today.setHours(0,0,0,0);
+      const monthNames = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+      const exams = state.exams.filter(e => e.year === activeYear);
+      const byDate = {};
+      exams.forEach(e => (byDate[e.date] ||= []).push(e));
+      const cells = Array.from({length:42},(_,i)=>{
+        const d = new Date(start); d.setDate(start.getDate()+i);
+        const key = localDateStr(d), same = d.getMonth()===examCalendarMonth;
+        const items = byDate[key] || [];
+        return `<div class="calendar-cell ${same?'':'muted'} ${d.getTime()===today.getTime()?'today':''} ${items.length?'has-exam':''}">
+          <strong>${d.getDate()}</strong>${items.length?`<span class="calendar-dot"></span><small>${items.length} bài</small>`:''}
+        </div>`;
+      }).join('');
+      host.innerHTML = `<div class="calendar-shell">
+        <div class="calendar-head"><button class="btn btn-outline btn-sm" onclick="shiftExamCalendar(-1)">‹</button><strong>🗓️ ${monthNames[examCalendarMonth]} ${examCalendarYear}</strong><button class="btn btn-outline btn-sm" onclick="shiftExamCalendar(1)">›</button></div>
+        <div class="calendar-grid" style="margin-bottom:6px">${['T2','T3','T4','T5','T6','T7','CN'].map(x=>`<div style="text-align:center;font-weight:800;color:var(--muted);font-size:.75rem">${x}</div>`).join('')}</div>
+        <div class="calendar-grid">${cells}</div>
+        <p style="font-size:.78rem;color:var(--muted);margin-top:9px">● Ngày có lịch kiểm tra · Tổng ${exams.length} bài trong năm học lớp ${activeYear}</p>
+      </div>`;
+    }
+
+    function renderExamsPage() {
+      const list = state.exams
+        .filter(e => e.year === state.activeYear)
+        .sort((a, b) => {
+          const t0 = localDateStr(new Date());
+          const pa = a.date < t0, pb = b.date < t0;
+          if (pa !== pb) return pa ? 1 : -1; // sắp tới lên trước, đã qua xuống cuối
+          return (pa ? -1 : 1) * (a.date + (a.time || '')).localeCompare(b.date + (b.time || ''));
+        });
+
+      const container = document.getElementById('examTableContainer');
+      renderExamCalendar(state.activeYear);
+      if (list.length === 0) {
+        container.innerHTML = `<div style="padding:34px; text-align:center; color:var(--muted);">Chưa có lịch kiểm tra nào cho Lớp ${state.activeYear}. Nhấn <strong>+ Thêm lịch kiểm tra</strong> để hệ thống tự lập lịch ôn tập!</div>`;
+        return;
+      }
+
+      container.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th class="left">Môn &amp; Nội dung kiểm tra</th>
+              <th>Loại</th>
+              <th>Thời gian thi</th>
+              <th>Còn lại</th>
+              <th class="left">Lịch ôn tập tự động (1–3 tuần)</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map(ex => {
+              const plan = calcStudyPlan(ex.subject, ex.date, ex.year);
+              const dayTxt = plan.diffDays === 0 ? 'Hôm nay' : plan.diffDays === 1 ? 'Ngày mai' : `Còn ${plan.diffDays} ngày`;
+              const badge = plan.diffDays < 0
+                ? `<span class="pill pill-empty">Đã qua</span>`
+                : plan.inStudyWindow
+                  ? `<span class="pill pill-low">🔥 Đang ôn tập</span>`
+                  : `<span class="pill pill-high">${dayTxt}</span>`;
+
+              return `
+                <tr>
+                  <td class="left">
+                    <strong>${escapeHtml(ex.subject)}</strong>${getActiveSubjects().includes(ex.subject) ? '' : ' <span class="pill pill-empty" title="Môn này không còn trong danh sách môn đang học">đã bỏ môn</span>'}<br>
+                    <span style="font-size:0.8rem; color:var(--muted);">${escapeHtml(ex.title)}</span>
+                  </td>
+                  <td><span class="pill pill-mid">${escapeHtml(ex.type)}</span></td>
+                  <td><strong>${plan.examDateStrVN}</strong>${ex.time ? `<br><small>${ex.time}</small>` : ''}</td>
+                  <td>${badge}</td>
+                  <td class="left">
+                    ${plan.diffDays >= 0 && plan.diffDays < plan.daysBefore ? `<strong>Nên bắt đầu ôn ngay hôm nay</strong> (khuyến nghị ${plan.daysBefore} ngày, chỉ còn ${plan.diffDays} ngày)` : `<strong>Bắt đầu ôn: ${plan.startDateStr}</strong> (${plan.daysBefore} ngày trước thi)`}<br>
+                    <small style="color:var(--muted);">${plan.difficulty}</small>
+                  </td>
+                  <td><button class="btn btn-danger btn-sm" onclick="deleteExam(${ex.id})">Xóa</button></td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // ==================== PAGE: SETTINGS ====================
+    function updateElectiveNote() {
+      const el = document.getElementById('electiveCountNote');
+      if (!el) return;
+      const n = state.settings.electives.length;
+      el.textContent = `Đang chọn ${n} môn lựa chọn → tổng ${MANDATORY_SCORED.length + n} môn tính điểm. Chương trình GDPT 2018 thường chọn 5 môn.`;
+    }
+
+    function renderSettingsPage() {
+      applyTheme();
+      const u = state.user;
+      document.getElementById('settingsProfileTitle').textContent = u.loggedIn ? (u.name || 'Người dùng') : 'Hello world!';
+      document.getElementById('settingsProfileSub').textContent = u.loggedIn ? (u.email || 'Hồ sơ học tập StudyTrack') : 'Đăng nhập Google để lấy tên và ảnh đại diện cho hồ sơ.';
+      const avatar = document.getElementById('settingsProfileAvatar');
+      avatar.innerHTML = u.loggedIn && u.avatar ? `<img src="${escapeHtml(u.avatar)}" alt="">` : (u.loggedIn ? escapeHtml((u.name||'U').charAt(0).toUpperCase()) : '?');
+      document.getElementById('settingsProfileAction').innerHTML = `<button class="btn btn-soft" onclick="openSettingsModal('profileSettingsModal')">✏️ Chỉnh sửa</button>${u.loggedIn ? '' : `<button class="google-btn" onclick="startGoogleLogin()">Đăng nhập Google</button>`}`;
+      document.getElementById('set_name').value = state.user.name || '';
+      document.getElementById('set_age').value = state.user.age || '';
+      document.getElementById('set_examBlock').value = state.settings.examBlock;
+      document.getElementById('set_targetTitle').value = state.settings.targetTitle;
+      document.getElementById('set_alertScore').value = state.settings.alertScore;
+      document.getElementById('set_highScore').value = state.settings.highScore;
+      document.getElementById('set_flucWarn').value = state.settings.flucWarnPct;
+      document.getElementById('logoutBtn').classList.toggle('hidden', !state.user.loggedIn);
+      document.getElementById('settingsElectivesGrid').innerHTML = ELECTIVE_POOL.map(sub => {
+        const checked = state.settings.electives.includes(sub) ? 'checked' : '';
+        return `<label class="check-chip"><input type="checkbox" value="${sub}" ${checked}> ${sub}</label>`;
+      }).join('');
+      updateElectiveNote();
+    }
+
+    function saveSettingsForm() {
+      const name = document.getElementById('set_name').value.trim();
+      const ageRaw = document.getElementById('set_age').value.trim();
+      const age = ageRaw === '' ? null : Number(ageRaw);
+      if (ageRaw !== '' && !validAge(age)) { showToast('Tuổi phải là số nguyên từ 14 đến 20.', 'error'); return; }
+      const th = readThresholds('set_alertScore', 'set_highScore', 'set_flucWarn');
+      if (!th) return;
+      state.user.name = name; // để trống thì xóa thật
+      if (name) state.user.loggedIn = true;
+      if (age !== state.user.age) {
+        state.user.age = age;
+        if (age) state.activeYear = ageToClass(age); // chỉ đổi lớp đang xem khi tuổi thật sự thay đổi
+      }
+      Object.assign(state.settings, th, {
+        examBlock: document.getElementById('set_examBlock').value,
+        targetTitle: document.getElementById('set_targetTitle').value
+      });
+      saveState();
+      ['profileSettingsModal','learningSettingsModal'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+      renderCurrentPage(true);
+      showToast('Đã lưu cài đặt!');
+    }
+
+    function logout() {
+      if (!confirm('Đăng xuất? Bảng điểm và dữ liệu vẫn được giữ trên trình duyệt này.')) return;
+      try { google.accounts.id.disableAutoSelect(); } catch {}
+      Object.assign(state.user, { loggedIn: false, name: '', email: '', avatar: '' });
+      saveState();
+      renderCurrentPage(true);
+      showToast('Đã đăng xuất.');
+    }
+
+    function applyElectives(selected) {
+      const sel = ELECTIVE_POOL.filter(x => selected.includes(x));
+      const removed = state.settings.electives.filter(x => !sel.includes(x));
+      state.settings.electives = sel;
+      saveState();
+      updateElectiveNote();
+      return removed;
+    }
+
+    function saveSettingsSubjects() {
+      const selected = [...document.querySelectorAll('#settingsElectivesGrid input:checked')].map(i => i.value);
+      if (selected.length < 2) { showToast('Hãy chọn ít nhất 2 môn lựa chọn.', 'error'); return; }
+      const removed = applyElectives(selected);
+      showToast('Đã cập nhật môn học!' + (removed.length ? ' Điểm của môn đã bỏ vẫn được giữ, bật lại là thấy.' : ''));
+      closeSettingsModal('subjectsSettingsModal');
+    }
+
+    // ==================== FLOATING + QUICK ADD SCORE ====================
+    function openQuickScoreModal() {
+      document.getElementById('qs_year').value = state.activeYear;
+      refreshQuickScoreSubjects();
+      document.getElementById('qs_value').value = '';
+      document.getElementById('quickScoreModal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('qs_value').focus(), 80);
+    }
+
+    function refreshQuickScoreSubjects() {
+      const sel = document.getElementById('qs_subject');
+      const keep = sel.value;
+      const subs = getActiveSubjects();
+      sel.innerHTML = subs.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');
+      if (subs.includes(keep)) sel.value = keep;
+      updateQuickScoreHint();
+    }
+
+    function qsCurrent() {
+      const yr = document.getElementById('qs_year').value;
+      const sem = document.getElementById('qs_sem').value;
+      const sub = document.getElementById('qs_subject').value;
+      const col = document.getElementById('qs_col').value;
+      const d = peekSubjectData(yr, sub)[sem];
+      const cur = col.startsWith('tx') ? d.tx[Number(col.slice(2))] : d[col];
+      return { yr, sem, sub, col, cur: isNum(cur) ? cur : null };
+    }
+
+    function updateQuickScoreHint() {
+      const el = document.getElementById('qs_hint');
+      if (!el) return;
+      const { cur } = qsCurrent();
+      el.textContent = cur === null ? 'Ô này đang trống.' : `Ô này đang có điểm ${cur} — lưu sẽ ghi đè.`;
+    }
+
+    function submitQuickScore() {
+      const { yr, sem, sub, col, cur } = qsCurrent();
+      const parsed = parseScore(document.getElementById('qs_value').value);
+      if (!parsed.valid) { showToast('Vui lòng nhập điểm hợp lệ từ 0 đến 10!', 'error'); return; }
+      if (parsed.value === null) {
+        if (cur === null) { showToast('Hãy nhập điểm cần lưu.', 'error'); return; }
+        if (!confirm('Xóa điểm đang lưu ở ô này?')) return;
+      }
+      const d = ensureSubjectData(yr, sub);
+      if (col.startsWith('tx')) d[sem].tx[Number(col.slice(2))] = parsed.value;
+      else d[sem][col] = parsed.value;
+      const switched = state.activeYear !== yr;
+      state.activeYear = yr;
+      saveState();
+      closeModal('quickScoreModal');
+      renderCurrentPage();
+      showToast(parsed.value === null ? 'Đã xóa điểm.' : `Đã lưu ${parsed.value} — ${sub}${switched ? ` (đang xem Lớp ${yr})` : ''}.`);
+    }
+
+    // ==================== DEMO / BACKUP ====================
+    function loadDemoData() {
+      const yr = state.activeYear;
+      if (!confirm(`Điền điểm mẫu sẽ GHI ĐÈ điểm đang có của các môn trong Lớp ${yr}. Tiếp tục?`)) return;
+      const subs = getActiveSubjects();
+      const rand = (min, max) => Math.round((min + Math.random() * (max - min)) * 2) / 2;
+      subs.forEach((name, idx) => {
+        const d = ensureSubjectData(yr, name);
+        const txLen = idx % 3 === 0 ? 3 : 4;
+        d.hk1.tx = [0, 1, 2, 3].map(i => (i < txLen ? rand(6.0, 9.5) : null));
+        d.hk1.gk = rand(6.5, 9.5);
+        d.hk1.ck = rand(6.5, 9.5);
+        d.hk2.tx = [0, 1, 2, 3].map(i => (i < txLen ? rand(6.5, 9.5) : null));
+        d.hk2.gk = rand(6.5, 9.5);
+        d.hk2.ck = idx >= subs.length - 2 ? null : rand(7.0, 9.5);
+      });
+      if (subs[0]) ensureSubjectData(yr, subs[0]).hk1.tx = [5.0, 9.5, 6.0, 9.0];
+      saveState();
+      renderCurrentPage();
+      showToast(`Đã điền điểm mẫu cho Lớp ${yr}.`);
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `studytrack-thpt-${localDateStr(new Date())}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500); // thu hồi ngay sẽ làm hỏng tải xuống ở một số trình duyệt
+    }
+
+    function importJSON(e) {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onerror = () => showToast('Không đọc được file.', 'error');
+      reader.onload = ev => {
+        let obj;
+        try { obj = JSON.parse(ev.target.result); } catch { showToast('File JSON không hợp lệ!', 'error'); return; }
+        if (!obj || typeof obj !== 'object' || (!obj.grades && !obj.settings)) { showToast('File không đúng định dạng dữ liệu StudyTrack.', 'error'); return; }
+        if (!confirm('Nhập file sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại. Tiếp tục?')) return;
+        const prev = state;
+        state = normalizeState(obj);
+        if (!saveState(true)) { state = prev; showToast('Dữ liệu quá lớn so với bộ nhớ trình duyệt.', 'error'); return; }
+        applyTheme();
+        navigate(state.page);
+        showToast('Khôi phục dữ liệu thành công!');
+      };
+      reader.readAsText(file);
+    }
+
+    function resetAllData() {
+      if (!confirm('Xóa toàn bộ dữ liệu tài khoản, bảng điểm, lịch thi và cài đặt?')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      state = getDefaultState();
+      applyTheme();
+      navigate('home');
+      showToast('Đã đặt lại toàn bộ dữ liệu.');
+    }
+
+    // ==================== HELPERS & INIT ====================
+    function openSettingsModal(id) {
+      const modal = document.getElementById(id);
+      if (!modal) return;
+      renderSettingsPage();
+      modal.classList.remove('hidden');
+    }
+
+    function closeSettingsModal(id) {
+      document.getElementById(id)?.classList.add('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    function slugify(str) {
+      return String(str).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function escapeAttr(s) {
+      return escapeHtml(String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+    }
+
+    function renderCurrentPage(force) {
+      document.querySelectorAll('[data-yr]').forEach(b => b.classList.toggle('active', b.dataset.yr === state.activeYear));
+      renderTopUser();
+      if (state.page === 'home') renderHomePage();
+      else if (state.page === 'grades') renderGradebookPage();
+      else if (state.page === 'charts') renderChartsPage();
+      else if (state.page === 'timetable') renderTimetablePage();
+      else if (state.page === 'exams') renderExamsPage();
+      else if (state.page === 'settings' && force) renderSettingsPage(); // không xóa dữ liệu đang gõ dở khi đổi năm học
+    }
+
+    // Init App
+    applyTheme();
+    renderTopUser();
+    navigate(state.page || 'home');
+    if (state.user.loggedIn && !state.user.onboarded) openOnboardingModal();
+
+    window.addEventListener('load', onGisLoaded); // chờ thư viện Google tải xong rồi mới vẽ nút
+
+    // Khóa cuộn nền khi có hộp thoại mở
+    const modalObserver = new MutationObserver(() =>
+      document.body.classList.toggle('modal-open', Boolean(document.querySelector('.modal-backdrop:not(.hidden)'))));
+    document.querySelectorAll('.modal-backdrop').forEach(m => modalObserver.observe(m, { attributes: true, attributeFilter: ['class'] }));
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-backdrop:not(.hidden)').forEach(m => {
+          if (m.id !== 'onboardingModal' || state.user.onboarded) closeModal(m.id);
+        });
+        toggleSidebar(false);
+      } else if (e.key === 'Enter' && e.target.id === 'qs_value') {
+        e.preventDefault();
+        submitQuickScore();
+      }
+    });
+
+    // Bỏ chọn môn lựa chọn: áp dụng ngay, không cần bấm thêm nút
+    document.getElementById('settingsElectivesGrid').addEventListener('change', e => {
+      if (e.target.type !== 'checkbox') return;
+      const selected = [...document.querySelectorAll('#settingsElectivesGrid input:checked')].map(i => i.value);
+      if (selected.length < 2) { e.target.checked = true; showToast('Cần giữ ít nhất 2 môn lựa chọn.', 'error'); return; }
+      applyElectives(selected);
+    });
+
+    // Kéo thả & bàn phím cho vùng tải thời khóa biểu
+    const dz = document.getElementById('tkbEmptyState');
+    ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.style.borderColor = 'var(--primary)'; }));
+    ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.style.borderColor = ''; }));
+    dz.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) processTimetableFile(f); });
+    dz.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById('tkbInput').click(); } });
+
+    // Đồng bộ giữa nhiều tab (không ghi lại để tránh vòng lặp)
+    window.addEventListener('storage', e => {
+      if (e.key !== STORAGE_KEY || !e.newValue) return;
+      const a = document.activeElement;
+      if (a && ['INPUT', 'SELECT', 'TEXTAREA'].includes(a.tagName)) return;
+      try {
+        const page = state.page;
+        state = normalizeState(JSON.parse(e.newValue));
+        state.page = page;
+        applyTheme();
+        renderCurrentPage(true);
+      } catch {}
+    });
+  </script>
+</body>
+</html>
