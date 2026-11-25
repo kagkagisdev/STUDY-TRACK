@@ -1154,6 +1154,7 @@
       50% { background-position:100% 50%; }
     }
     @media (prefers-reduced-motion: reduce) { .advice-box.advice-glow { animation: none; } }
+      @media (prefers-reduced-motion: reduce) { .advice-list .ai-reveal strong { animation: none; } .advice-list.advice-reveal-run .ai-reveal { animation: none; opacity: 1; transform: none; } }
   </style>
 </head>
 <body>
@@ -1669,6 +1670,7 @@
     const STORAGE_KEY = 'studytrack_thpt_v2';
     const TKB_KEY = STORAGE_KEY + '_tkb';
     let tkbSig = null;
+    const MODE_KEY = STORAGE_KEY + '_mode'; // 'cloud' = dữ liệu chỉ nằm trên đám mây
 
     const MANDATORY_SCORED = ['Ngữ văn', 'Toán', 'Ngoại ngữ 1 (Tiếng Anh)', 'Lịch sử'];
     const MANDATORY_PASSFAIL = [
@@ -1837,6 +1839,12 @@
       let raw = null;
       try {
         raw = localStorage.getItem(STORAGE_KEY);
+        if (localStorage.getItem(MODE_KEY) === 'cloud') { // dữ liệu nằm trên đám mây, chỉ giữ thời khóa biểu ở máy
+          const st = getDefaultState();
+          st.settings.cloudSync = true;
+          try { const tk = localStorage.getItem(TKB_KEY); if (tk) st.timetables = JSON.parse(tk); } catch {}
+          return normalizeState(st);
+        }
         if (!raw) return getDefaultState();
         const obj = JSON.parse(raw);
         const tk = localStorage.getItem(TKB_KEY);
@@ -1851,7 +1859,8 @@
     function saveState(silent) {
       try {
         const { timetables, ...rest } = state;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(rest));
+        if (state.settings.cloudSync) { localStorage.setItem(MODE_KEY, 'cloud'); localStorage.removeItem(STORAGE_KEY); }
+        else { localStorage.removeItem(MODE_KEY); localStorage.setItem(STORAGE_KEY, JSON.stringify(rest)); }
         const sig = ['10', '11', '12'].map(y => timetables && timetables[y] ? (timetables[y].name || '') + ':' + timetables[y].dataUrl.length : '').join('|');
         if (sig !== tkbSig) { localStorage.setItem(TKB_KEY, JSON.stringify(timetables)); tkbSig = sig; }
         try { window.stCloudTouch && window.stCloudTouch(); } catch {}
@@ -2083,6 +2092,7 @@
     const GOOGLE_CLIENT_ID = '530581194930-4ronvsbehs6skt4cs98evtpg1mjnjumj.apps.googleusercontent.com';
     let gisReady = false;
     let pendingCloudSync = false;
+    let cloudBusy = false;
 
     function initGoogleSignIn() {
       if (gisReady) return true;
@@ -2158,9 +2168,9 @@
       state.user.avatar = avatar;
       if (dob) setDob(dob);
       else if (!keepDob) setDob(null); // xóa ngày sinh ở ô nhập thì xóa thật
-      if (pendingCloudSync) {
-        state.settings.cloudSync = true;
+      if (pendingCloudSync) { // đăng nhập xong thì tiếp tục luồng bật đồng bộ (có xác nhận + sao lưu)
         pendingCloudSync = false;
+        setTimeout(() => setCloudSync(true), 600);
       }
       saveState();
       closeModal('authModal');
@@ -2390,22 +2400,22 @@
         rankDesc = 'Cần ít nhất 6 môn tính điểm để xếp loại (vào Setting để chọn thêm môn).';
       } else if (validAvgs.length === subAvgs.length) {
         if (pfFail.length) {
-          rankLabel = '⚠️ Chưa đạt';
+          rankLabel = '🤔 Chưa đạt';
           rankDesc = `Có nội dung đánh giá "Chưa đạt": ${pfFail.join(', ')}.`;
         } else if (minAvg >= 6.5 && cnt(9) >= 6 && mainOK) {
-          rankLabel = '🏆 Học sinh Xuất sắc (HSXS)';
+          rankLabel = '😍 Học sinh Xuất sắc (HSXS)';
           rankDesc = `Mọi môn ≥ 6.5, ${cnt(9)} môn ≥ 9.0 và có môn Toán/Văn/Ngoại ngữ ≥ 8.0.`;
         } else if (minAvg >= 6.5 && cnt(8) >= 6 && mainOK) {
-          rankLabel = '🌟 Học sinh Giỏi (HSG)';
+          rankLabel = '😘 Học sinh Giỏi (HSG)';
           rankDesc = `Mọi môn ≥ 6.5, ${cnt(8)} môn ≥ 8.0 và có môn Toán/Văn/Ngoại ngữ ≥ 8.0.`;
         } else if (minAvg >= 5.0 && cnt(6.5) >= 6 && mainMax >= 6.5) {
-          rankLabel = '👍 Học sinh Khá';
+          rankLabel = '🤔 Học sinh Khá';
           rankDesc = `Mọi môn ≥ 5.0, ${cnt(6.5)} môn ≥ 6.5 và có môn Toán/Văn/Ngoại ngữ ≥ 6.5.`;
         } else if (minAvg >= 3.5 && cnt(5) >= 6 && mainMax >= 5.0) {
-          rankLabel = '✔️ Đạt';
+          rankLabel = '🤔 Đạt';
           rankDesc = `Mọi môn ≥ 3.5, ${cnt(5)} môn ≥ 5.0.`;
         } else {
-          rankLabel = '⚠️ Chưa đạt';
+          rankLabel = '🤔 Chưa đạt';
           rankDesc = 'Cần cải thiện các môn dưới chuẩn.';
         }
         if (anyProv) rankDesc += ' (Tạm tính — còn thiếu điểm Giữa kì/Cuối kì.)';
@@ -2420,107 +2430,53 @@
       const targetName = target === 'HSXX' ? 'Học sinh Xuất sắc (HSXS)' : 'Học sinh Giỏi (HSG)';
       document.getElementById('adviceTitle').textContent = '✨ Gợi ý học tập';
       const T = targetHigh;
-      const ranked = [...subAvgs].sort((a, b) => (b.avg === null ? -1 : b.avg) - (a.avg === null ? -1 : a.avg));
-      const chosen = ranked.slice(0, 6); // 6 môn gần mức mục tiêu nhất
-      if (chosen.length && !chosen.some(x => MAIN3.includes(x.name))) {
-        const m = ranked.find(x => MAIN3.includes(x.name));
-        if (m) chosen[chosen.length - 1] = m;
-      }
-      const goalSet = new Set(chosen.map(x => x.name));
+const fmt = n => n.toFixed(1);
+      const short = n => n.replace(/ \(.*\)$/, '');
+      const tShort = target === 'HSXX' ? 'HSXS' : 'HSG';
       // Điểm Cuối kì tối thiểu để ĐTB học kì (làm tròn 1 số lẻ) đạt mức req
       const needCK = (sem, req) => {
-        if (isNum(sem.ck)) return null;
+        if (!sem || isNum(sem.ck)) return null;
         const c = v => Math.round(v * 100);
         const tx = sem.tx.filter(isNum), hasGK = isNum(sem.gk);
         const denom = tx.length + (hasGK ? 2 : 0) + 3;
         const num = tx.reduce((a, b) => a + c(b), 0) + (hasGK ? 2 * c(sem.gk) : 0);
-        return Math.max(0, Math.ceil(((req * 100) * denom - num) / 30) / 10);
+        return Math.max(0, Math.ceil(((req * 100 - 5) * denom - num) / 30) / 10);
       };
-      const fmt = n => n.toFixed(1);
-      const info = subAvgs.map(x => {
-        const goal = goalSet.has(x.name), req = goal ? T : 6.5, cur = x.avg;
-        const ok = cur !== null && cur >= req;
-        const ck = !ok && cur !== null && mode !== 'year' ? needCK(x.data[mode], req) : null;
-        return { name: x.name.replace(/ \(.*\)$/, ''), cur, req, ok, goal, ck };
-      });
-      const gap = i => (i.cur === null ? 99 : i.req - i.cur);
-      const todo = info.filter(i => !i.ok).sort((a, b) => gap(a) - gap(b));
-      const done = info.filter(i => i.ok && i.goal);
-      const floorOk = info.filter(i => i.ok && !i.goal);
-      const tShort = target === 'HSXX' ? 'HSXS' : 'HSG';
-      const part = i => i.cur === null
-        ? `${i.name} (chưa có điểm, cần ≥ ${fmt(i.req)})`
-        : `${i.name} ${fmt(i.cur)}→${fmt(i.req)}` + (i.ck === null ? '' : i.ck > 10 ? ' (cần kéo thêm TX/Giữa kì)' : ` (Cuối kì ≥ ${fmt(i.ck)})`);
-      const validSubjects = subAvgs.filter(s => s.avg !== null);
-      const floorPass = validSubjects.filter(s => s.avg >= 6.5);
-      const floorNeed = validSubjects
-        .filter(s => s.avg < 6.5)
-        .sort((a, b) => a.avg - b.avg);
-      const noScore = subAvgs.filter(s => s.avg === null);
-      const highPass = validSubjects
-        .filter(s => s.avg >= T)
-        .sort((a, b) => b.avg - a.avg);
-      const highNeed = validSubjects
-        .filter(s => s.avg < T)
-        .sort((a, b) => b.avg - a.avg);
-      const alertSubjects = subAvgs
-        .filter(s => s.avg !== null && s.avg < alertLimit)
-        .sort((a, b) => a.avg - b.avg);
-
+      const scored = subAvgs.filter(x => x.avg !== null);
+      const noScore = subAvgs.filter(x => x.avg === null);
+      const reached = scored.filter(x => x.avg >= T).sort((a, b) => b.avg - a.avg);
+      const gapList = scored.filter(x => x.avg < T).sort((a, b) => b.avg - a.avg);
+      const below65 = scored.filter(x => x.avg < 6.5).sort((a, b) => a.avg - b.avg);
+      const mainReached = reached.some(x => MAIN3.includes(x.name));
+      const attained = target === 'HSXX' ? rankLabel.includes('Xuất sắc') : /Xuất sắc|Giỏi/.test(rankLabel);
       const lines = [];
-      lines.push(`📊 <strong>Tình hình ${tShort}:</strong> ${floorPass.length}/${subAvgs.length} môn đạt sàn 6.5; ${highPass.length}/6 môn đạt từ ${fmt(T)} trở lên.`);
-
-      const pullSubjects = [...floorNeed];
-      highNeed.forEach(s => {
-        if (!pullSubjects.some(x => x.name === s.name)) pullSubjects.push(s);
-      });
-      noScore.forEach(s => {
-        if (!pullSubjects.some(x => x.name === s.name)) pullSubjects.push(s);
-      });
-
-      if (pullSubjects.length) {
-        const list = pullSubjects.sort((a, b) => {
-          if (a.avg === null && b.avg === null) return a.name.localeCompare(b.name, 'vi');
-          if (a.avg === null) return 1;
-          if (b.avg === null) return -1;
-          return a.avg - b.avg;
-        }).map(s =>
-          s.avg === null
-            ? `${s.name} (chưa có điểm)`
-            : s.avg < 6.5
-              ? `${s.name}: ${fmt(s.avg)} → cần 6.5`
-              : `${s.name}: ${fmt(s.avg)} → cần ${fmt(T)}`
-        ).join(', ');
-        lines.push(`🔺 <strong>Cần kéo:</strong> ${list}.`);
+      lines.push(`📊 Bạn đã có <strong>${Math.min(6, reached.length)}/6 môn</strong> đạt từ ${fmt(T)} trở lên cho danh hiệu <strong>${tShort}</strong>${reached.length ? ` (${reached.slice(0, 6).map(x => `${short(x.name)} ${fmt(x.avg)}`).join(', ')})` : ''}.`);
+      if (attained && !pfFail.length) {
+        lines.push(`🎉 Điểm hiện tại đã đủ điều kiện <strong>${targetName}</strong>. Hãy giữ vững các môn đã đạt, nhất là những môn sát mốc ${fmt(T)}.`);
       } else {
-        lines.push('🔺 <strong>Cần kéo:</strong> Không có môn nào cần kéo thêm.');
+        const need = Math.max(0, 6 - reached.length);
+        let picks = gapList.slice(0, need);
+        if (!mainReached) {
+          const m = gapList.find(x => MAIN3.includes(x.name));
+          if (m && !picks.includes(m)) { if (picks.length) picks[picks.length - 1] = m; else picks = [m]; }
+        }
+        const pickText = x => {
+          const ck = mode !== 'year' ? needCK(x.data[mode], T) : null;
+          return `${short(x.name)} ${fmt(x.avg)} → ${fmt(T)}` + (ck !== null && ck <= 10 ? ` (Cuối kì ≥ ${fmt(ck)})` : '');
+        };
+        const parts = [];
+        if (picks.length) parts.push(`thêm <strong>${picks.length} môn</strong> lên ${fmt(T)}: ${picks.map(pickText).join(', ')}`);
+        if (below65.length) parts.push(`${below65.map(x => `${short(x.name)} ${fmt(x.avg)}`).join(', ')} phải lên ít nhất 6.5`);
+        if (noScore.length) parts.push(`nhập điểm ${noScore.map(x => short(x.name)).join(', ')} để tính chính xác`);
+        if (parts.length) lines.push(`🔺 <strong>Cần kéo:</strong> ${parts.join('; ')}.`);
+        const first = below65[0] || picks[0];
+        if (first) lines.push(`💡 <strong>Ưu tiên:</strong> ${short(first.name)} trước${first.avg < 6.5 ? ', vì đang dưới mốc 6.5 và đây là điều kiện bắt buộc' : `, vì chỉ còn thiếu ${fmt(T - first.avg)} điểm`}.`);
       }
-
-      if (highPass.length) {
-        lines.push(`✅ <strong>Đã đạt:</strong> ${highPass.map(s => `${s.name}: ${fmt(s.avg)}`).join(', ')}.`);
-      } else {
-        lines.push(`✅ <strong>Đã đạt:</strong> Chưa có môn nào đạt từ ${fmt(T)} trở lên.`);
-      }
-
-      const priority = floorNeed[0] || highNeed.find(s => s.avg !== null) || noScore[0];
-      if (priority) {
-        const priorityText = priority.avg === null
-          ? `${priority.name} (nhập điểm để xác định chính xác)`
-          : priority.avg < 6.5
-            ? `${priority.name} — điểm trung bình ${fmt(priority.avg)}, cần tăng lên ít nhất 6.5`
-            : `${priority.name} — điểm trung bình ${fmt(priority.avg)}, cần thêm ${fmt(T - priority.avg)} điểm để đạt ${fmt(T)}`;
-        lines.push(`💡 <strong>Ưu tiên:</strong> ${priorityText}.`);
-      } else {
-        lines.push(`💡 <strong>Ưu tiên:</strong> Giữ vững phong độ để duy trì ${targetName}.`);
-      }
-
-      const warningItems = alertSubjects.map(s => `${s.name}: ${fmt(s.avg)}`);
-      if (pfFail.length) warningItems.push(...pfFail.map(m => `${m}: Chưa đạt`));
-      if (warningItems.length) {
-        lines.push(`⚠️ <strong>Lưu ý:</strong> Có ${warningItems.length} mục gần mức báo động hoặc cần cải thiện: ${warningItems.join(', ')}.`);
-      } else {
-        lines.push(`⚠️ <strong>Lưu ý:</strong> Không có môn nào dưới mức điểm báo động ${fmt(alertLimit)}.`);
-      }
+      const near = [...scored].sort((a, b) => Math.abs(a.avg - alertLimit) - Math.abs(b.avg - alertLimit)).slice(0, 3);
+      const notes = [];
+      if (near.length) notes.push(`${near.length} môn gần mức báo động (&lt; ${fmt(alertLimit)}) nhất là ${near.map(x => `${short(x.name)} ${fmt(x.avg)}${x.avg < alertLimit ? ' 🚨' : ''}`).join(', ')}`);
+      if (pfFail.length) notes.push(`cần chuyển ${pfFail.join(', ')} sang Đạt`);
+      if (notes.length) lines.push(`⚠️ <strong>Lưu ý:</strong> ${notes.join('; ')}.`);
 
       document.getElementById('adviceList').innerHTML = lines
         .map((l, i) => `<li class="adv-line ai-reveal" style="animation-delay:${i * 0.12}s">${l}</li>`)
@@ -3154,10 +3110,19 @@
     }
 
     function logout() {
-      if (!confirm('Đăng xuất? Bảng điểm và dữ liệu vẫn được giữ trên trình duyệt này.')) return;
+      const cloud = state.settings.cloudSync === true;
+      if (!confirm(cloud ? 'Đăng xuất? Dữ liệu vẫn nằm an toàn trên đám mây; trình duyệt này sẽ không còn giữ bảng điểm.' : 'Đăng xuất? Bảng điểm và dữ liệu vẫn được giữ trên trình duyệt này.')) return;
       try { window.stFirebaseSignOut && window.stFirebaseSignOut(); } catch {}
       try { google.accounts.id.disableAutoSelect(); } catch {}
-      Object.assign(state.user, { loggedIn: false, name: '', email: '', avatar: '' });
+      if (cloud) { // không để dữ liệu của người này lọt sang tài khoản đăng nhập sau
+        const tt = state.timetables;
+        state = getDefaultState();
+        state.settings.cloudSync = true;
+        state.timetables = tt;
+        applyTheme();
+      } else {
+        Object.assign(state.user, { loggedIn: false, name: '', email: '', avatar: '' });
+      }
       saveState();
       renderCurrentPage(true);
       showToast('Đã đăng xuất.');
@@ -3261,6 +3226,7 @@
     }
 
     function exportJSON() {
+      if (state.settings.cloudSync && window.stCloud && !window.stCloud.isReady()) { showToast('Chưa tải xong dữ liệu từ đám mây nên chưa thể sao lưu.', 'error'); return; }
       const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -3282,9 +3248,12 @@
         let obj;
         try { obj = JSON.parse(ev.target.result); } catch { showToast('File JSON không hợp lệ!', 'error'); return; }
         if (!obj || typeof obj !== 'object' || (!obj.grades && !obj.settings)) { showToast('File không đúng định dạng dữ liệu StudyTrack.', 'error'); return; }
+        if (state.settings.cloudSync && window.stCloud && !window.stCloud.isReady()) { showToast('Chưa tải xong dữ liệu từ đám mây nên chưa thể nhập file.', 'error'); return; }
         if (!confirm('Nhập file sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại. Tiếp tục?')) return;
         const prev = state;
+        const keepCloud = state.settings.cloudSync === true;
         state = normalizeState(obj);
+        state.settings.cloudSync = keepCloud; // file sao lưu không được tự bật/tắt đồng bộ
         if (!saveState(true)) { state = prev; showToast('Dữ liệu quá lớn so với bộ nhớ trình duyệt.', 'error'); return; }
         applyTheme();
         navigate(state.page);
@@ -3294,57 +3263,71 @@
     }
 
     function resetAllData() {
-      if (!confirm('Xóa toàn bộ dữ liệu tài khoản, bảng điểm, lịch thi và cài đặt?')) return;
+      const wasCloud = state.settings.cloudSync === true;
+      if (wasCloud && window.stCloud && !window.stCloud.isReady()) { showToast('Chưa tải xong dữ liệu từ đám mây nên chưa thể đặt lại.', 'error'); return; }
+      if (!confirm(wasCloud ? 'Xóa toàn bộ dữ liệu (kể cả bản trên đám mây), bảng điểm, lịch thi và cài đặt?' : 'Xóa toàn bộ dữ liệu tài khoản, bảng điểm, lịch thi và cài đặt?')) return;
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(TKB_KEY);
       tkbSig = null;
       state = getDefaultState();
+      if (wasCloud) state.settings.cloudSync = true;
       applyTheme();
       navigate('home');
       showToast('Đã đặt lại toàn bộ dữ liệu.');
     }
 
-    function setCloudSync(enabled) {
+    async function setCloudSync(enabled) {
       const toggle = document.getElementById('cloudSyncToggle');
-      if (enabled) {
-        if (!state.user.loggedIn) {
-          if (toggle) toggle.checked = false;
-          pendingCloudSync = true;
-          showToast('Hãy đăng nhập Google trước khi bật đồng bộ đám mây.', 'error');
-          startGoogleLogin();
-          return;
-        }
-        state.settings.cloudSync = true;
-        saveState();
-        if (toggle) toggle.checked = true;
-        showToast('Đã bật đồng bộ đám mây.');
+      const sync = () => { if (toggle) toggle.checked = state.settings.cloudSync === true; };
+      if (cloudBusy || enabled === (state.settings.cloudSync === true)) { sync(); return; }
+      cloudBusy = true;
+      try { await (enabled ? enableCloudSync() : disableCloudSync()); }
+      catch (e) { console.error(e); showToast((e && (e.code || e.message)) || 'Đồng bộ đám mây gặp lỗi.', 'error'); }
+      finally { cloudBusy = false; sync(); }
+    }
+
+    async function enableCloudSync() {
+      if (!state.user.loggedIn) {
+        pendingCloudSync = true;
+        showToast('Hãy đăng nhập Google trước khi bật đồng bộ đám mây.', 'error');
+        startGoogleLogin();
         return;
       }
-
-      const confirmed = confirm(
-        'Tắt đồng bộ đám mây sẽ xóa dữ liệu điểm, hồ sơ, cài đặt và lịch thi khỏi bộ nhớ cục bộ của trình duyệt.\n\nThời khóa biểu sẽ được giữ lại.\n\nBạn đã tải bản sao lưu JSON chưa? OK = tải dữ liệu JSON xuống trước rồi tắt.'
-      );
-      if (!confirmed) {
-        if (toggle) toggle.checked = true;
-        return;
+      const cloud = window.stCloud;
+      if (!cloud) { showToast('Chưa tải được Firebase. Kiểm tra mạng rồi thử lại.', 'error'); return; }
+      const user = await cloud.ensureUser();
+      if (!user) { showToast('Chưa đăng nhập được Firebase nên chưa bật được đồng bộ.', 'error'); return; }
+      const ok = confirm('Bật đồng bộ đám mây sẽ XÓA dữ liệu điểm, hồ sơ, cài đặt và lịch thi khỏi bộ nhớ cục bộ của trình duyệt (dữ liệu chỉ còn lưu trên đám mây).\n\nThời khóa biểu sẽ được giữ lại.\n\nBạn đã tải bản sao lưu JSON chưa?\n\nOK = tải bản sao lưu JSON xuống trước, rồi đẩy dữ liệu lên đám mây và đồng bộ liên tục.\nHủy = không bật.');
+      if (!ok) return;
+      exportJSON();
+      const remote = await cloud.peek();
+      let useCloud = false;
+      if (remote && remote.stateJson) {
+        useCloud = confirm('Đám mây đã có dữ liệu của tài khoản này.\n\nOK = dùng dữ liệu trên đám mây (thay dữ liệu trên máy này).\nHủy = ghi đè đám mây bằng dữ liệu trên máy này.');
       }
-
-      const shouldExport = confirm('Tải bản sao lưu JSON trước khi tắt đồng bộ?');
-      if (shouldExport) exportJSON();
-      try { window.stFirebaseSignOut && window.stFirebaseSignOut(); } catch {}
-
-      const timetables = state.timetables;
-      localStorage.removeItem(STORAGE_KEY);
+      if (useCloud) {
+        state = normalizeState(Object.assign({}, JSON.parse(remote.stateJson), { timetables: state.timetables }));
+      } else if (!(await cloud.pushNow())) {
+        throw new Error('Không ghi được lên đám mây nên dữ liệu trên máy vẫn được giữ nguyên.');
+      }
+      state.settings.cloudSync = true;
       localStorage.removeItem(STORAGE_KEY + '_cloud');
       localStorage.removeItem(STORAGE_KEY + '_edited');
-      tkbSig = null;
-      state = getDefaultState();
-      state.timetables = timetables;
-      state.settings.cloudSync = false;
+      saveState(true); // sang chế độ đám mây: xóa dữ liệu cục bộ, giữ thời khóa biểu
+      cloud.arm();
       applyTheme();
-      if (toggle) toggle.checked = false;
       renderCurrentPage(true);
-      showToast('Đã tắt đồng bộ; dữ liệu điểm/lịch thi đã xóa khỏi máy, còn giữ thời khóa biểu.');
+      showToast('Đã bật đồng bộ đám mây: dữ liệu lưu trên đám mây và cập nhật liên tục.');
+    }
+
+    async function disableCloudSync() {
+      if (window.stCloud && !window.stCloud.isReady()) { showToast('Chưa tải xong dữ liệu từ đám mây nên chưa thể tắt. Hãy thử lại sau.', 'error'); return; }
+      if (!confirm('Tắt đồng bộ đám mây?\n\nDữ liệu hiện tại sẽ được lưu lại trên trình duyệt này. Đám mây giữ bản cuối cùng nhưng không còn được cập nhật.')) return;
+      try { if (window.stCloud) await window.stCloud.flush(); } catch {}
+      state.settings.cloudSync = false;
+      saveState(); // quay lại lưu cục bộ
+      renderCurrentPage(true);
+      showToast('Đã tắt đồng bộ; dữ liệu được lưu trên máy này.');
     }
 
     async function enableExamNotifications() {
@@ -3396,7 +3379,7 @@
           const message = plan.diffDays === 0
             ? `Hôm nay là lịch kiểm tra ${ex.subject}.`
             : `Đã đến lịch ôn ${ex.subject}; còn ${plan.diffDays} ngày đến kiểm tra.`;
-          new Notification('StudyTrack - Nhắc ôn tập', { body: message, tag: key });
+          try { new Notification('StudyTrack - Nhắc ôn tập', { body: message, tag: key }); } catch { showToast('🔔 ' + message); }
           localStorage.setItem(key, '1');
         });
     }
@@ -3518,7 +3501,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 (function () {
-  if (typeof firebase === 'undefined') { console.warn('Không tải được Firebase: app chỉ lưu trên máy này.'); return; }
+  if (typeof firebase === 'undefined') {
+    console.warn('Không tải được Firebase: app chỉ lưu trên máy này.');
+    try { if (state.settings.cloudSync) showToast('Không tải được Firebase nên chưa truy cập được dữ liệu trên đám mây. Kiểm tra mạng rồi tải lại trang.', 'error'); } catch {}
+    return;
+  }
   firebase.initializeApp({
     apiKey: "AIzaSyDXP1tY0o8aEuJMowmcFO9nebgqvfwqAZw",
     authDomain: "studytrack-a19ec.firebaseapp.com",
@@ -3530,101 +3517,87 @@
   });
   const auth = firebase.auth();
   const db = firebase.firestore();
-  const META_KEY = STORAGE_KEY + '_cloud';   // {uid, base}: tài khoản + mốc đã đồng bộ gần nhất
-  const EDIT_KEY = STORAGE_KEY + '_edited';  // thời điểm sửa cục bộ gần nhất
-  const MAX_BYTES = 900000;                  // Firestore giới hạn 1 MiB / document
-  let ready = false, pushTimer = null, warned = false;
+  const MAX_BYTES = 900000; // Firestore giới hạn 1 MiB / document
+  let ready = false, pushTimer = null, inflight = 0, lastWarn = 0;
+  // ready = đã tải xong dữ liệu từ mây; chưa ready thì tuyệt đối không đẩy gì lên (tránh ghi đè bằng dữ liệu rỗng)
 
-  const readMeta = () => { try { return JSON.parse(localStorage.getItem(META_KEY)) || {}; } catch { return {}; } };
-  const localEdit = () => Number(localStorage.getItem(EDIT_KEY)) || 0;
-  const setBase = (uid, ts) => localStorage.setItem(META_KEY, JSON.stringify({ uid: uid, base: ts }));
-  const warn = msg => { if (!warned) { warned = true; showToast(msg, 'error'); } };
-  // Chỉ đồng bộ dữ liệu app (không gồm ảnh thời khóa biểu, không gồm key của app khác)
-  const slim = () => { const { timetables, ...rest } = state; return JSON.stringify(rest); };
-  const isBlank = () => !state.exams.length && ['10', '11', '12'].every(y =>
-    Object.values(state.grades[y] || {}).every(g => ['hk1', 'hk2'].every(h =>
-      g[h].tx.every(v => v === null) && g[h].gk === null && g[h].ck === null)));
+  const warn = msg => { const n = Date.now(); if (n - lastWarn > 4000) { lastWarn = n; showToast(msg, 'error'); } };
+  const docRef = u => db.collection('users').doc(u.uid);
+  const slim = () => { const { timetables, ...rest } = state; return JSON.stringify(rest); }; // không gửi ảnh thời khóa biểu
 
   async function push(user) {
     const json = slim();
-    if (new Blob([json]).size > MAX_BYTES) { warn('Dữ liệu quá lớn để đồng bộ lên mây.'); return; }
-    const ts = localEdit() || Date.now();
+    if (new Blob([json]).size > MAX_BYTES) { warn('Dữ liệu quá lớn để đồng bộ lên mây.'); return false; }
+    inflight++;
     try {
-      await db.collection('users').doc(user.uid).set({
-        email: user.email || '',
-        displayName: user.displayName || '',
-        stateJson: json,
-        clientUpdatedAt: ts,
+      await docRef(user).set({
+        email: user.email || '', displayName: user.displayName || '',
+        stateJson: json, clientUpdatedAt: Date.now(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      setBase(user.uid, ts);
+      return true;
     } catch (e) {
       console.error('Lỗi đồng bộ lên mây:', e);
-      warn('Không lưu được lên mây (' + (e.code || e.message) + '). Dữ liệu vẫn được giữ trên máy.');
-    }
+      warn('Không lưu được lên mây (' + (e.code || e.message) + ').');
+      return false;
+    } finally { inflight--; }
   }
 
-  function pull(data, uid) {
+  function pull(data) {
     const page = state.page;
     state = normalizeState(Object.assign({}, JSON.parse(data.stateJson), { timetables: state.timetables }));
+    state.settings.cloudSync = true;
     state.page = page;
-    saveState(true);
-    localStorage.setItem(EDIT_KEY, String(data.clientUpdatedAt || 0));
-    setBase(uid, data.clientUpdatedAt || 0);
     applyTheme();
     renderCurrentPage(true);
     if (state.user.onboarded) closeModal('onboardingModal');
+    try { checkStudyReminders(false); } catch {}
   }
 
-  // Máy đang giữ dữ liệu của tài khoản khác và tài khoản mới chưa có gì trên mây: bắt đầu sạch
-  function fresh() {
-    const u = state.user;
-    state = getDefaultState();
-    state.user = Object.assign({}, state.user, u, { onboarded: false, age: null });
-    saveState(true);
-    applyTheme();
-    renderCurrentPage(true);
-    if (state.user.loggedIn) openOnboardingModal();
-  }
-
+  // Chế độ đám mây: máy không giữ dữ liệu nên luôn lấy từ mây; mây chưa có gì thì đẩy bản hiện tại lên
   async function reconcile(user) {
     ready = false;
-    if (!state.settings.cloudSync) { ready = true; return; }
+    if (!state.settings.cloudSync) return;
     try {
-      const snap = await db.collection('users').doc(user.uid).get();
-      const hasCloud = snap.exists && !!snap.data().stateJson;
-      const data = hasCloud ? snap.data() : null;
-      const meta = readMeta();
-      const same = meta.uid === user.uid;
-      const base = same ? (meta.base || 0) : 0;
-      const localDirty = localEdit() > base && !isBlank();
-      if (meta.uid && !same) {
-        if (hasCloud) pull(data, user.uid);
-        else { fresh(); await push(user); }
-      } else if (!hasCloud) {
-        await push(user);
-      } else {
-        const cloudNewer = (data.clientUpdatedAt || 0) > base;
-        if (cloudNewer && !localDirty) pull(data, user.uid);
-        else if (localDirty && !cloudNewer) await push(user);
-        else if (localDirty && cloudNewer) {
-          if (confirm('Dữ liệu trên máy này và trên mây đều có thay đổi mới.\nOK = dùng dữ liệu trên MÂY (ghi đè máy này)\nHủy = giữ dữ liệu MÁY NÀY (ghi đè mây)')) pull(data, user.uid);
-          else await push(user);
-        }
-      }
+      const snap = await docRef(user).get();
+      if (snap.exists && snap.data().stateJson) pull(snap.data());
+      else if (!(await push(user))) return;
+      ready = true;
     } catch (e) {
       console.error('Lỗi đọc dữ liệu từ mây:', e);
-      warn('Không kết nối được kho đồng bộ (' + (e.code || e.message) + '). App vẫn chạy bằng dữ liệu trên máy.');
+      warn('Không tải được dữ liệu từ đám mây (' + (e.code || e.message) + '). Hãy kiểm tra mạng rồi tải lại trang.');
     }
-    ready = true;
   }
+
+  function ensureUser() {
+    if (auth.currentUser) return Promise.resolve(auth.currentUser);
+    return new Promise(resolve => {
+      let done = false, off = () => {};
+      const finish = u => { if (done) return; done = true; off(); resolve(u); };
+      off = auth.onAuthStateChanged(u => { if (u) finish(u); });
+      setTimeout(() => {
+        if (done || auth.currentUser) return;
+        auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(r => finish(r.user)).catch(e => {
+          warn('Đăng nhập Firebase lỗi (' + (e.code || e.message) + '). Kiểm tra Authorized domains trong Firebase Console.');
+          finish(null);
+        });
+      }, 1200);
+    });
+  }
+
+  window.stCloud = {
+    isReady: () => ready,
+    arm: () => { ready = true; },
+    ensureUser: ensureUser,
+    peek: async () => { const u = auth.currentUser; if (!u) return null; const s = await docRef(u).get(); return s.exists ? s.data() : null; },
+    pushNow: () => { const u = auth.currentUser; return u ? push(u) : Promise.resolve(false); },
+    flush: async () => { clearTimeout(pushTimer); pushTimer = null; const u = auth.currentUser; if (u && ready) await push(u); }
+  };
 
   // app gọi sau mỗi lần saveState()
   window.stCloudTouch = function () {
-    if (!state.settings.cloudSync) return;
-    localStorage.setItem(EDIT_KEY, String(Date.now()));
     const u = auth.currentUser;
-    if (!u || !ready) return;
+    if (!state.settings.cloudSync || !u || !ready) return;
     clearTimeout(pushTimer);
     pushTimer = setTimeout(() => { pushTimer = null; push(u); }, 800);
   };
@@ -3640,7 +3613,7 @@
   window.stFirebaseSignOut = function () {
     const u = auth.currentUser;
     clearTimeout(pushTimer); pushTimer = null;
-    const p = u && ready ? push(u) : Promise.resolve();
+    const p = u && ready && state.settings.cloudSync ? push(u) : Promise.resolve();
     ready = false;
     return p.then(() => auth.signOut());
   };
@@ -3648,12 +3621,15 @@
   auth.onAuthStateChanged(user => {
     clearTimeout(pushTimer); pushTimer = null; ready = false;
     if (user) reconcile(user);
+    else if (state.settings.cloudSync) warn('Đồng bộ đám mây đang bật. Hãy đăng nhập Google để tải dữ liệu.');
   });
 
   document.addEventListener('visibilitychange', () => {
     const u = auth.currentUser;
     if (document.visibilityState === 'hidden' && pushTimer && u && ready && state.settings.cloudSync) { clearTimeout(pushTimer); pushTimer = null; push(u); }
   });
+  // đang có thay đổi chưa kịp lên mây mà đóng tab: cảnh báo (chế độ đám mây không giữ bản trên máy)
+  window.addEventListener('beforeunload', e => { if (state.settings.cloudSync && (pushTimer || inflight)) { e.preventDefault(); e.returnValue = ''; } });
 })();
 </script>
 
