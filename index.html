@@ -1411,7 +1411,7 @@
       <div class="modal-header"><div class="modal-title">🎯 Cài đặt học tập</div><button class="modal-close" onclick="closeSettingsModal('learningSettingsModal')">✕</button></div>
       <div class="form-grid">
         <div class="field"><label for="set_examBlock">Khối hiện muốn thi</label><select id="set_examBlock"><option value="A00 (Toán - Lí - Hóa)">A00 (Toán - Lí - Hóa)</option><option value="A01 (Toán - Lí - Anh)">A01 (Toán - Lí - Anh)</option><option value="B00 (Toán - Hóa - Sinh)">B00 (Toán - Hóa - Sinh)</option><option value="C00 (Văn - Sử - Địa)">C00 (Văn - Sử - Địa)</option><option value="D01 (Toán - Văn - Anh)">D01 (Toán - Văn - Anh)</option><option value="D07 (Toán - Hóa - Anh)">D07 (Toán - Hóa - Anh)</option><option value="Khác / Đánh giá năng lực">Khác / Đánh giá năng lực</option></select></div>
-        <div class="field"><label for="set_targetTitle">Danh hiệu mục tiêu</label><select id="set_targetTitle"><option value="HSXX">Học sinh Xuất sắc</option><option value="HSG">Học sinh Giỏi</option></select></div>
+        <div class="field"><label for="set_targetTitle">Danh hiệu mục tiêu</label><select id="set_targetTitle"><option value="HSXX">Học sinh Xuất sắc (HSXS)</option><option value="HSG">Học sinh Giỏi (HSG)</option></select></div>
         <div class="field"><label for="set_alertScore">Mức điểm báo động (ĐTB dưới mức này)</label><input class="input" id="set_alertScore" type="number" step="0.1" min="0" max="10"></div>
         <div class="field"><label for="set_highScore">Mục tiêu điểm (ĐTB từ mức này trở lên)</label><input class="input" id="set_highScore" type="number" step="0.1" min="0" max="10"></div>
         <div class="field"><label for="set_flucWarn">Ngưỡng cảnh báo dao động điểm (%)</label><input class="input" id="set_flucWarn" type="number" step="1" min="5" max="100"></div>
@@ -1625,7 +1625,7 @@
         <div class="field">
           <label for="ob_title">Danh hiệu mục tiêu</label>
           <select id="ob_title">
-            <option value="HSXX">Học sinh Xuất sắc (HSXX)</option>
+            <option value="HSXX">Học sinh Xuất sắc (HSXS)</option>
             <option value="HSG">Học sinh Giỏi (HSG)</option>
           </select>
         </div>
@@ -2393,7 +2393,7 @@
           rankLabel = '⚠️ Chưa đạt';
           rankDesc = `Có nội dung đánh giá "Chưa đạt": ${pfFail.join(', ')}.`;
         } else if (minAvg >= 6.5 && cnt(9) >= 6 && mainOK) {
-          rankLabel = '🏆 Học sinh Xuất sắc (HSXX)';
+          rankLabel = '🏆 Học sinh Xuất sắc (HSXS)';
           rankDesc = `Mọi môn ≥ 6.5, ${cnt(9)} môn ≥ 9.0 và có môn Toán/Văn/Ngoại ngữ ≥ 8.0.`;
         } else if (minAvg >= 6.5 && cnt(8) >= 6 && mainOK) {
           rankLabel = '🌟 Học sinh Giỏi (HSG)';
@@ -2417,7 +2417,7 @@
       // Advice to reach targetTitle (HSXX or HSG)
       const target = state.settings.targetTitle || 'HSXX';
       const targetHigh = target === 'HSXX' ? 9.0 : 8.0;
-      const targetName = target === 'HSXX' ? 'Học sinh Xuất sắc (HSXX)' : 'Học sinh Giỏi (HSG)';
+      const targetName = target === 'HSXX' ? 'Học sinh Xuất sắc (HSXS)' : 'Học sinh Giỏi (HSG)';
       document.getElementById('adviceTitle').textContent = '✨ Gợi ý học tập';
       const T = targetHigh;
       const ranked = [...subAvgs].sort((a, b) => (b.avg === null ? -1 : b.avg) - (a.avg === null ? -1 : a.avg));
@@ -2447,50 +2447,68 @@
       const todo = info.filter(i => !i.ok).sort((a, b) => gap(a) - gap(b));
       const done = info.filter(i => i.ok && i.goal);
       const floorOk = info.filter(i => i.ok && !i.goal);
-      const tShort = target === 'HSXX' ? 'HSXX' : 'HSG';
+      const tShort = target === 'HSXX' ? 'HSXS' : 'HSG';
       const part = i => i.cur === null
         ? `${i.name} (chưa có điểm, cần ≥ ${fmt(i.req)})`
         : `${i.name} ${fmt(i.cur)}→${fmt(i.req)}` + (i.ck === null ? '' : i.ck > 10 ? ' (cần kéo thêm TX/Giữa kì)' : ` (Cuối kì ≥ ${fmt(i.ck)})`);
-      const achieved = subAvgs
-        .filter(s => s.avg !== null && s.avg >= T)
+      const validSubjects = subAvgs.filter(s => s.avg !== null);
+      const floorPass = validSubjects.filter(s => s.avg >= 6.5);
+      const floorNeed = validSubjects
+        .filter(s => s.avg < 6.5)
+        .sort((a, b) => a.avg - b.avg);
+      const noScore = subAvgs.filter(s => s.avg === null);
+      const highPass = validSubjects
+        .filter(s => s.avg >= T)
         .sort((a, b) => b.avg - a.avg);
-      const needPull = subAvgs
-        .filter(s => s.avg === null || s.avg < T)
-        .sort((a, b) => {
-          if (a.avg === null && b.avg === null) return a.name.localeCompare(b.name, 'vi');
-          if (a.avg === null) return 1;
-          if (b.avg === null) return -1;
-          return (T - a.avg) - (T - b.avg);
-        });
+      const highNeed = validSubjects
+        .filter(s => s.avg < T)
+        .sort((a, b) => b.avg - a.avg);
       const alertSubjects = subAvgs
         .filter(s => s.avg !== null && s.avg < alertLimit)
         .sort((a, b) => a.avg - b.avg);
 
       const lines = [];
-      lines.push(`📊 <strong>Tình hình ${tShort}:</strong> ${achieved.length}/${subAvgs.length} môn đã đạt điểm trung bình mục tiêu ≥ ${fmt(T)}${needPull.length ? `; còn ${needPull.length} môn chưa đạt mục tiêu` : '; tất cả môn đã đạt mục tiêu'}.`);
+      lines.push(`📊 <strong>Tình hình ${tShort}:</strong> ${floorPass.length}/${subAvgs.length} môn đạt sàn 6.5; ${highPass.length}/6 môn đạt từ ${fmt(T)} trở lên.`);
 
-      if (needPull.length) {
-        const list = needPull.map(s =>
+      const pullSubjects = [...floorNeed];
+      highNeed.forEach(s => {
+        if (!pullSubjects.some(x => x.name === s.name)) pullSubjects.push(s);
+      });
+      noScore.forEach(s => {
+        if (!pullSubjects.some(x => x.name === s.name)) pullSubjects.push(s);
+      });
+
+      if (pullSubjects.length) {
+        const list = pullSubjects.sort((a, b) => {
+          if (a.avg === null && b.avg === null) return a.name.localeCompare(b.name, 'vi');
+          if (a.avg === null) return 1;
+          if (b.avg === null) return -1;
+          return a.avg - b.avg;
+        }).map(s =>
           s.avg === null
             ? `${s.name} (chưa có điểm)`
-            : `${s.name}: ${fmt(s.avg)} → ${fmt(T)}`
+            : s.avg < 6.5
+              ? `${s.name}: ${fmt(s.avg)} → cần 6.5`
+              : `${s.name}: ${fmt(s.avg)} → cần ${fmt(T)}`
         ).join(', ');
         lines.push(`🔺 <strong>Cần kéo:</strong> ${list}.`);
       } else {
         lines.push('🔺 <strong>Cần kéo:</strong> Không có môn nào cần kéo thêm.');
       }
 
-      if (achieved.length) {
-        lines.push(`✅ <strong>Đã đạt:</strong> ${achieved.map(s => `${s.name}: ${fmt(s.avg)}`).join(', ')}.`);
+      if (highPass.length) {
+        lines.push(`✅ <strong>Đã đạt:</strong> ${highPass.map(s => `${s.name}: ${fmt(s.avg)}`).join(', ')}.`);
       } else {
-        lines.push('✅ <strong>Đã đạt:</strong> Chưa có môn nào đạt điểm trung bình mục tiêu.');
+        lines.push(`✅ <strong>Đã đạt:</strong> Chưa có môn nào đạt từ ${fmt(T)} trở lên.`);
       }
 
-      const priority = needPull.find(s => s.avg !== null) || needPull[0];
+      const priority = floorNeed[0] || highNeed.find(s => s.avg !== null) || noScore[0];
       if (priority) {
         const priorityText = priority.avg === null
           ? `${priority.name} (nhập điểm để xác định chính xác)`
-          : `${priority.name} — điểm trung bình ${fmt(priority.avg)}, chỉ cách mục tiêu ${fmt(T - priority.avg)} điểm`;
+          : priority.avg < 6.5
+            ? `${priority.name} — điểm trung bình ${fmt(priority.avg)}, cần tăng lên ít nhất 6.5`
+            : `${priority.name} — điểm trung bình ${fmt(priority.avg)}, cần thêm ${fmt(T - priority.avg)} điểm để đạt ${fmt(T)}`;
         lines.push(`💡 <strong>Ưu tiên:</strong> ${priorityText}.`);
       } else {
         lines.push(`💡 <strong>Ưu tiên:</strong> Giữ vững phong độ để duy trì ${targetName}.`);
