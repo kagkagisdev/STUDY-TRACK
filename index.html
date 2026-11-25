@@ -1024,6 +1024,26 @@
     }
     @media(prefers-reduced-motion:reduce) { *,*::before,*::after {animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important} }
 
+  
+    @property --st-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+    @keyframes stBorderSpin { to { --st-angle: 360deg; } }
+    .advice-box.advice-glow {
+      border: 2px solid transparent;
+      background: linear-gradient(var(--bg), var(--bg)) padding-box,
+                  conic-gradient(from var(--st-angle), #f43f5e, #f59e0b, #22c55e, #06b6d4, #8b5cf6, #f43f5e) border-box;
+      animation: stBorderSpin 4s linear infinite;
+      box-shadow: 0 0 18px rgba(139,92,246,.18);
+    }
+    .advice-box.advice-glow:hover { border-color: transparent; }
+    .advice-glow .advice-list { padding-left: 0; list-style: none; gap: 8px; }
+    .adv-note { font-size: .84rem; color: var(--muted); }
+    .adv-row { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 9px 12px; }
+    .adv-row.ok { opacity: .72; }
+    .adv-top { display: flex; align-items: center; gap: 8px; }
+    .adv-name { font-weight: 700; flex: 1; }
+    .adv-tag { font-size: .72rem; color: var(--muted); }
+    .adv-hint { font-size: .82rem; margin-top: 4px; }
+    @media (prefers-reduced-motion: reduce) { .advice-box.advice-glow { animation: none; } }
   </style>
 </head>
 <body>
@@ -1123,8 +1143,8 @@
               <div style="margin-top:10px; font-size:0.84rem; font-weight:700;" id="homeGpaLine">ĐTB chung: --</div>
               <div style="margin-top:6px; font-size:0.74rem; color:var(--muted);">Xếp loại theo Thông tư 22/2021, chưa xét kết quả rèn luyện.</div>
             </div>
-            <div class="advice-box">
-              <div style="font-weight:800; font-size:0.95rem;" id="adviceTitle">🎯 Lộ trình đạt danh hiệu mục tiêu</div>
+            <div class="advice-box advice-glow">
+              <div style="font-weight:800; font-size:0.95rem;" id="adviceTitle">✨ Gợi ý học tập</div>
               <ul class="advice-list" id="adviceList"></ul>
             </div>
           </div>
@@ -1267,7 +1287,7 @@
       <div class="modal-header"><div class="modal-title">👤 Chỉnh sửa hồ sơ</div><button class="modal-close" onclick="closeSettingsModal('profileSettingsModal')">✕</button></div>
       <div class="form-grid">
         <div class="field"><label for="set_name">Tên hiển thị</label><input class="input" id="set_name" type="text" placeholder="Tên của bạn"></div>
-        <div class="field"><label for="set_age">Tuổi (để xác định Lớp 10 / 11 / 12)</label><input class="input" id="set_age" type="number" min="14" max="20" placeholder="16"></div>
+        <div class="field"><label for="set_age">Ngày sinh (tuổi tự tăng theo năm, dùng để xếp Lớp 10 / 11 / 12)</label><input class="input" id="set_age" type="date"></div>
       </div>
       <div class="modal-footer"><button class="btn btn-outline" onclick="closeSettingsModal('profileSettingsModal')">Hủy</button><button class="btn btn-primary" onclick="saveSettingsForm()">Lưu hồ sơ</button></div>
     </div>
@@ -1438,8 +1458,8 @@
             <input class="input" id="login_email" type="email" placeholder="minhanh@gmail.com" />
           </div>
           <div class="field" style="grid-column: 1 / -1;">
-            <label for="login_age">Tuổi của bạn (nếu để trống, bước sau sẽ hỏi lại)</label>
-            <input class="input" id="login_age" type="number" min="14" max="20" placeholder="VD: 16 (Lớp 11)" />
+            <label for="login_age">Ngày sinh của bạn (nếu để trống, bước sau sẽ hỏi lại)</label>
+            <input class="input" id="login_age" type="date" />
           </div>
         </div>
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
@@ -1460,8 +1480,8 @@
       </div>
 
       <div id="ob_ageBox" class="field" style="margin-bottom:14px;">
-        <label for="ob_age">Tuổi hiện tại của bạn (Tài khoản chưa có tuổi — dùng để xác định Lớp 10 / 11 / 12)</label>
-        <input class="input" id="ob_age" type="number" min="14" max="20" value="16" />
+        <label for="ob_age">Ngày sinh của bạn (dùng để xác định Lớp 10 / 11 / 12, tuổi sẽ tự tăng theo năm)</label>
+        <input class="input" id="ob_age" type="date" />
       </div>
 
       <div class="form-grid" style="margin-bottom:14px;">
@@ -1522,6 +1542,8 @@
 
   <script>
     const STORAGE_KEY = 'studytrack_thpt_v2';
+    const TKB_KEY = STORAGE_KEY + '_tkb';
+    let tkbSig = null;
 
     const MANDATORY_SCORED = ['Ngữ văn', 'Toán', 'Ngoại ngữ 1 (Tiếng Anh)', 'Lịch sử'];
     const MANDATORY_PASSFAIL = [
@@ -1589,6 +1611,8 @@
           email: '',
           avatar: '',
           age: null,
+          dob: null,
+          promotedYear: null,
           onboarded: false
         },
         settings: {
@@ -1626,12 +1650,14 @@
     function normalizeState(p) {
       const base = getDefaultState();
       if (!p || typeof p !== 'object' || Array.isArray(p)) return base;
-      const s = { ...base, ...p };
+      const s = { ...base, ...p }; delete s._homeModeTouched;
       const obj = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
       s.user = { ...base.user, ...obj(p.user) };
       s.settings = { ...base.settings, ...obj(p.settings) };
-      const age = Number(s.user.age);
-      s.user.age = validAge(age) ? age : null;
+      s.user.dob = validDob(s.user.dob) ? String(s.user.dob) : null;
+      const age = s.user.dob ? ageFromDob(s.user.dob) : Number(s.user.age); // tuổi tự tính lại mỗi lần mở app
+      s.user.age = s.user.dob ? age : (validAge(age) ? age : null);
+      s.user.promotedYear = Number.isInteger(s.user.promotedYear) ? s.user.promotedYear : null;
       const num = (v, d, lo, hi) => { const n = Number(v); return (v !== null && v !== '' && isFinite(n) && n >= lo && n <= hi) ? n : d; };
       s.settings.alertScore = num(s.settings.alertScore, 6.5, 0, 10);
       s.settings.highScore = num(s.settings.highScore, 8, 0, 10);
@@ -1670,7 +1696,10 @@
       try {
         raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return getDefaultState();
-        return normalizeState(JSON.parse(raw));
+        const obj = JSON.parse(raw);
+        const tk = localStorage.getItem(TKB_KEY);
+        if (tk && obj && typeof obj === 'object') { try { obj.timetables = JSON.parse(tk); } catch {} }
+        return normalizeState(obj);
       } catch {
         try { if (raw) localStorage.setItem(STORAGE_KEY + '_corrupt_backup', raw); } catch {}
         return getDefaultState();
@@ -1679,7 +1708,11 @@
 
     function saveState(silent) {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        const { timetables, ...rest } = state;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(rest));
+        const sig = ['10', '11', '12'].map(y => timetables && timetables[y] ? (timetables[y].name || '') + ':' + timetables[y].dataUrl.length : '').join('|');
+        if (sig !== tkbSig) { localStorage.setItem(TKB_KEY, JSON.stringify(timetables)); tkbSig = sig; }
+        try { window.stCloudTouch && window.stCloudTouch(); } catch {}
         return true;
       } catch {
         if (!silent) showToast('Không lưu được dữ liệu (bộ nhớ trình duyệt đầy hoặc bị chặn).', 'error');
@@ -1709,6 +1742,48 @@
       if (!state.grades[year]) state.grades[year] = {};
       if (!state.grades[year][subName]) state.grades[year][subName] = emptySubjectData();
       return state.grades[year][subName];
+    }
+
+    function parseDob(v) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || ''));
+      if (!m) return null;
+      const d = new Date(+m[1], +m[2] - 1, +m[3]);
+      return d.getFullYear() === +m[1] && d.getMonth() === +m[2] - 1 && d.getDate() === +m[3] ? d : null;
+    }
+    function ageFromDob(dob) {
+      const d = parseDob(dob);
+      if (!d) return null;
+      const n = new Date();
+      let a = n.getFullYear() - d.getFullYear();
+      if (n.getMonth() < d.getMonth() || (n.getMonth() === d.getMonth() && n.getDate() < d.getDate())) a--;
+      return a;
+    }
+    function validDob(dob) { const a = ageFromDob(dob); return a !== null && a >= 12 && a <= 25; }
+    // Năm học bắt đầu từ tháng 8/9; sinh năm Y thì học lớp 10 vào năm học Y+15
+    function classFromDob(dob) {
+      const d = parseDob(dob);
+      if (!d) return null;
+      const n = new Date();
+      const sy = n.getMonth() >= 7 ? n.getFullYear() : n.getFullYear() - 1;
+      return String(Math.min(12, Math.max(10, 10 + sy - d.getFullYear() - 15)));
+    }
+    function setDob(dob) {
+      if (dob === state.user.dob) return;
+      state.user.dob = dob;
+      state.user.age = dob ? ageFromDob(dob) : null;
+      if (dob) state.activeYear = classFromDob(dob);
+    }
+    // Tháng 8 + đã nhập đủ Cuối kì 2 của mọi môn → tự lên lớp (mỗi năm tối đa 1 lần)
+    function maybeAutoPromote() {
+      const now = new Date();
+      const yr = state.activeYear;
+      if (now.getMonth() !== 7 || state.user.promotedYear === now.getFullYear() || yr === '12') return false;
+      if (!getActiveSubjects().every(n => isNum(peekSubjectData(yr, n).hk2.ck))) return false;
+      state.activeYear = String(Number(yr) + 1);
+      state.user.promotedYear = now.getFullYear();
+      saveState();
+      showToast(`Đã đủ điểm Cuối kì 2 — tự chuyển lên Lớp ${state.activeYear}! 🎉`);
+      return true;
     }
 
     function ageToClass(age) {
@@ -1900,7 +1975,8 @@
     function handleGoogleCredential(resp) {
       try {
         const p = decodeJwt(resp.credential);
-        applyLoginResult({ name: p.name || p.given_name || 'Người dùng Google', email: p.email || '', avatar: p.picture || '', age: null, keepAge: true });
+        try { window.stFirebaseSignIn && window.stFirebaseSignIn(resp.credential, p.email); } catch {}
+        applyLoginResult({ name: p.name || p.given_name || 'Người dùng Google', email: p.email || '', avatar: p.picture || '', dob: null, keepDob: true });
         showToast(`Xin chào, ${p.given_name || p.name || 'bạn'}!`);
       } catch {
         showToast('Không đọc được thông tin tài khoản Google.', 'error');
@@ -1910,7 +1986,7 @@
     function startGoogleLogin() {
       document.getElementById('login_name').value = state.user.name || '';
       document.getElementById('login_email').value = state.user.email || '';
-      document.getElementById('login_age').value = state.user.age || '';
+      document.getElementById('login_age').value = state.user.dob || '';
       document.getElementById('authModal').classList.remove('hidden');
       renderGoogleButton('authGoogleBtn');
     }
@@ -1919,24 +1995,20 @@
     function completeLocalGoogleLogin() {
       const name = document.getElementById('login_name').value.trim();
       const email = document.getElementById('login_email').value.trim();
-      const ageRaw = document.getElementById('login_age').value.trim();
-      const age = ageRaw ? Number(ageRaw) : null;
+      const dob = document.getElementById('login_age').value.trim() || null;
       if (!name) { showToast('Vui lòng nhập tên của bạn!', 'error'); document.getElementById('login_name').focus(); return; }
       if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Email chưa đúng định dạng.', 'error'); document.getElementById('login_email').focus(); return; }
-      if (ageRaw && !validAge(age)) { showToast('Tuổi phải là số nguyên từ 14 đến 20.', 'error'); document.getElementById('login_age').focus(); return; }
-      applyLoginResult({ name, email, avatar: '', age });
+      if (dob && !validDob(dob)) { showToast('Ngày sinh không hợp lệ (tuổi phải từ 12 đến 25).', 'error'); document.getElementById('login_age').focus(); return; }
+      applyLoginResult({ name, email, avatar: '', dob });
     }
 
-    function applyLoginResult({ name, email, avatar, age, keepAge }) {
+    function applyLoginResult({ name, email, avatar, dob, keepDob }) {
       state.user.loggedIn = true;
       state.user.name = name;
       state.user.email = email;
       state.user.avatar = avatar;
-      if (age) {
-        if (age !== state.user.age) { state.user.age = age; state.activeYear = ageToClass(age); }
-      } else if (!keepAge) {
-        state.user.age = null; // xóa tuổi ở ô nhập thì xóa thật
-      }
+      if (dob) setDob(dob);
+      else if (!keepDob) setDob(null); // xóa ngày sinh ở ô nhập thì xóa thật
       saveState();
       closeModal('authModal');
       renderTopUser();
@@ -1945,9 +2017,9 @@
     }
 
     function openOnboardingModal() {
-      document.getElementById('ob_ageBox').classList.toggle('hidden', Boolean(state.user.age));
+      document.getElementById('ob_ageBox').classList.toggle('hidden', Boolean(state.user.dob));
       document.getElementById('ob_closeBtn').classList.toggle('hidden', !state.user.onboarded);
-      document.getElementById('ob_age').value = state.user.age || 16;
+      document.getElementById('ob_age').value = state.user.dob || '';
       document.getElementById('ob_block').value = state.settings.examBlock;
       document.getElementById('ob_title').value = state.settings.targetTitle;
       document.getElementById('ob_alert').value = state.settings.alertScore;
@@ -1978,16 +2050,16 @@
     }
 
     function finishOnboarding() {
-      let age = state.user.age;
-      if (!age) {
-        age = Number(document.getElementById('ob_age').value);
-        if (!validAge(age)) { showToast('Tuổi phải là số nguyên từ 14 đến 20.', 'error'); return; }
+      let dob = state.user.dob;
+      if (!dob) {
+        dob = document.getElementById('ob_age').value.trim();
+        if (!validDob(dob)) { showToast('Hãy nhập ngày sinh hợp lệ (tuổi từ 12 đến 25).', 'error'); return; }
       }
       const selected = [...document.querySelectorAll('#ob_electivesGrid input:checked')].map(i => i.value);
       if (selected.length < 2) { showToast('Hãy chọn ít nhất 2 môn lựa chọn (chương trình GDPT 2018 thường chọn 5 môn).', 'error'); return; }
       const th = readThresholds('ob_alert', 'ob_high', 'ob_fluc');
       if (!th) return;
-      if (!state.user.age) { state.user.age = age; state.activeYear = ageToClass(age); }
+      if (!state.user.dob) setDob(dob);
       Object.assign(state.settings, th, {
         electives: ELECTIVE_POOL.filter(x => selected.includes(x)),
         examBlock: document.getElementById('ob_block').value,
@@ -2001,7 +2073,6 @@
 
     // ==================== PAGE: HOME ====================
     function setHomeMode(mode) {
-      state._homeModeTouched = true;
       state.homeMode = mode;
       saveState();
       renderHomePage();
@@ -2021,7 +2092,7 @@
         : 'Hãy đăng nhập bằng Google để lưu hồ sơ, xác định lớp theo tuổi và thiết lập môn học.';
 
       const badges = [];
-      if (u.age) badges.push(`<span class="hero-badge">🎂 ${u.age} tuổi • Lớp ${ageToClass(u.age)}</span>`);
+      if (u.age) badges.push(`<span class="hero-badge">🎂 ${u.age} tuổi • Lớp ${yr}</span>`);
       badges.push(`<span class="hero-badge">🎯 Khối thi: ${state.settings.examBlock}</span>`);
       badges.push(`<span class="hero-badge">🏅 Mục tiêu: ${state.settings.targetTitle === 'HSXX' ? 'Học sinh Xuất sắc' : 'Học sinh Giỏi'}</span>`);
       badges.push(`<span class="hero-badge">📚 ${subjects.length} môn tính điểm</span>`);
@@ -2035,7 +2106,6 @@
       // Compute subject averages for active Home mode
       const hasHK2Scores = subjects.some(n => { const d=peekSubjectData(yr,n).hk2; return [...d.tx,d.gk,d.ck].some(isNum); });
       const allYearFinal = subjects.length > 0 && subjects.every(n => { const d=peekSubjectData(yr,n); return isNum(d.hk1.ck) && isNum(d.hk2.ck); });
-      if (!state._homeModeTouched && !state.homeMode) state.homeMode = 'hk1';
       const mode = state.homeMode || 'hk1';
       document.querySelectorAll('[data-homemode]').forEach(b => b.classList.toggle('active', b.dataset.homemode === mode));
       document.getElementById('homeYearLabel').textContent = `Lớp ${yr}`;
@@ -2059,7 +2129,7 @@
           ? 'Kết quả cuối năm sẽ hiển thị sau khi hoàn thành và nhập điểm Học kì 2.'
           : 'Chưa có điểm Học kì 2. Hãy nhập điểm khi học kì bắt đầu.';
         document.getElementById('homeGpaLine').textContent = 'ĐTB chung: Chưa có thông tin';
-        document.getElementById('adviceTitle').textContent = '🎯 Gợi ý học tập sẽ xuất hiện khi có dữ liệu';
+        document.getElementById('adviceTitle').textContent = '✨ Gợi ý học tập';
         document.getElementById('adviceList').innerHTML = '<li>Tiếp tục cập nhật điểm để theo dõi tiến độ học tập.</li>';
         document.getElementById('homeSubjectsGrid').innerHTML = subjects.map(name => `<div class="sub-mini-card"><span>${name}</span><span class="pill pill-empty">Chưa có thông tin</span></div>`).join('');
         return;
@@ -2195,49 +2265,43 @@
       const target = state.settings.targetTitle || 'HSXX';
       const targetHigh = target === 'HSXX' ? 9.0 : 8.0;
       const targetName = target === 'HSXX' ? 'Học sinh Xuất sắc (HSXX)' : 'Học sinh Giỏi (HSG)';
-      document.getElementById('adviceTitle').textContent = `🎯 Cần kéo gì để đạt danh hiệu ${targetName}?`;
-
-      const adviceItems = [];
-      const missingSubs = subAvgs.filter(s => s.avg === null);
-      if (missingSubs.length > 0) {
-        adviceItems.push(`Bạn còn <strong>${missingSubs.length} môn chưa có điểm</strong> (${missingSubs.map(s => s.name).join(', ')}). Hãy nhập thêm để hệ thống tính chính xác.`);
+      document.getElementById('adviceTitle').textContent = '✨ Gợi ý học tập';
+      const T = targetHigh;
+      const ranked = [...subAvgs].sort((a, b) => (b.avg === null ? -1 : b.avg) - (a.avg === null ? -1 : a.avg));
+      const chosen = ranked.slice(0, 6); // 6 môn gần mức mục tiêu nhất
+      if (chosen.length && !chosen.some(x => MAIN3.includes(x.name))) {
+        const m = ranked.find(x => MAIN3.includes(x.name));
+        if (m) chosen[chosen.length - 1] = m;
       }
-
-      // Condition 1: All >= 6.5
-      const below65 = subAvgs.filter(s => s.avg !== null && s.avg < 6.5);
-      below65.forEach(s => {
-        const diff = (6.5 - s.avg).toFixed(1);
-        adviceItems.push(`<strong>${s.name}</strong> (hiện ${s.avg.toFixed(1)}): cần kéo thêm <strong style="color:var(--danger)">+${diff} điểm</strong> để đạt mức sàn 6.5.`);
-      });
-
-      if (pfFail.length) adviceItems.push(`Cần chuyển <strong>${pfFail.join(', ')}</strong> sang <strong>Đạt</strong> (bắt buộc để đạt học lực Khá/Tốt).`);
-      const mainSubs = subAvgs.filter(s => MAIN3.includes(s.name));
-      if (mainSubs.length && mainSubs.every(s => s.avg !== null) && !mainOK) {
-        adviceItems.push('Cần ít nhất <strong>1 trong 3 môn Toán, Ngữ văn, Ngoại ngữ</strong> đạt từ <strong>8.0</strong>.');
-      }
-
-      // Condition 2: At least 6 subjects >= targetHigh
-      const reachedHigh = subAvgs.filter(s => s.avg !== null && s.avg >= targetHigh);
-      const needMoreCount = Math.max(0, 6 - reachedHigh.length);
-
-      if (needMoreCount > 0) {
-        const candidates = subAvgs
-          .filter(s => s.avg !== null && s.avg < targetHigh)
-          .sort((a, b) => b.avg - a.avg)
-          .slice(0, needMoreCount);
-
-        if (candidates.length > 0) {
-          const desc = candidates.map(c => {
-            const diff = (targetHigh - c.avg).toFixed(1);
-            return `<strong>${c.name}</strong> (${c.avg.toFixed(1)} → ${targetHigh.toFixed(1)}, cần <strong>+${diff}</strong>)`;
-          }).join('; ');
-          adviceItems.push(`Hiện có <strong>${reachedHigh.length}/6 môn ≥ ${targetHigh.toFixed(1)}</strong>. Để đủ 6 môn, nên ưu tiên kéo ${needMoreCount} môn gần nhất: ${desc}.`);
+      const goalSet = new Set(chosen.map(x => x.name));
+      // Điểm Cuối kì tối thiểu để ĐTB học kì (làm tròn 1 số lẻ) đạt mức req
+      const needCK = (sem, req) => {
+        if (isNum(sem.ck)) return null;
+        const c = v => Math.round(v * 100);
+        const tx = sem.tx.filter(isNum), hasGK = isNum(sem.gk);
+        const denom = tx.length + (hasGK ? 2 : 0) + 3;
+        const num = tx.reduce((a, b) => a + c(b), 0) + (hasGK ? 2 * c(sem.gk) : 0);
+        return Math.max(0, Math.ceil(((req * 100 - 5) * denom - num) / 30) / 10);
+      };
+      const rows = subAvgs.map(x => {
+        const goal = goalSet.has(x.name), req = goal ? T : 6.5, cur = x.avg;
+        const ok = cur !== null && cur >= req;
+        let hint;
+        if (ok) hint = '✅ Đã đạt mức yêu cầu';
+        else if (cur === null) hint = `Chưa có điểm — cần ĐTB <strong>≥ ${req.toFixed(1)}</strong>`;
+        else {
+          hint = `Cần ĐTB <strong>≥ ${req.toFixed(1)}</strong> (thiếu <strong style="color:var(--danger)">+${(req - cur).toFixed(1)}</strong>)`;
+          if (mode !== 'year') {
+            const k = needCK(x.data[mode], req);
+            if (k !== null) hint += k > 10 ? ' — chỉ điểm Cuối kì chưa đủ, cần kéo thêm TX/Giữa kì' : ` → điểm Cuối kì cần <strong>≥ ${k.toFixed(1)}</strong>`;
+          }
         }
-      } else if (below65.length === 0 && missingSubs.length === 0 && mainOK && !pfFail.length) {
-        adviceItems.push(`🎉 Tuyệt vời! Điểm số hiện tại của bạn đã <strong>đạt đủ điều kiện danh hiệu ${targetName}</strong>!`);
-      }
-
-      document.getElementById('adviceList').innerHTML = adviceItems.map(i => `<li>${i}</li>`).join('');
+        return `<li class="adv-row${ok ? ' ok' : ''}"><div class="adv-top"><span class="adv-name">${x.name}</span><span class="adv-tag">${goal ? `mục tiêu ≥ ${T.toFixed(1)}` : 'sàn ≥ 6.5'}</span><span class="pill ${pillClass(cur)}">${cur === null ? '--' : cur.toFixed(1)}</span></div><div class="adv-hint">${hint}</div></li>`;
+      }).join('');
+      const notes = [`Mục tiêu <strong>${targetName}</strong>: mọi môn ≥ 6.5, có ≥ 6 môn ≥ ${T.toFixed(1)} và ≥ 1 môn Toán/Văn/Ngoại ngữ ≥ 8.0. Hệ thống chọn 6 môn gần mức mục tiêu nhất để kéo.`];
+      if (pfFail.length) notes.push(`Cần chuyển <strong>${pfFail.join(', ')}</strong> sang <strong>Đạt</strong>.`);
+      if (subAvgs.length >= 6 && !pfFail.length && subAvgs.every(x => x.avg !== null && x.avg >= (goalSet.has(x.name) ? T : 6.5))) notes.push(`🎉 Điểm hiện tại đã đạt đủ điều kiện ${targetName}!`);
+      document.getElementById('adviceList').innerHTML = notes.map(n => `<li class="adv-note">${n}</li>`).join('') + rows;
 
       document.getElementById('homeSubjectsGrid').innerHTML = subAvgs.map(s => `
         <div class="sub-mini-card">
@@ -2291,6 +2355,7 @@
       el.classList.remove('invalid');
       el.title = '';
       el._ctx = null;
+      if (maybeAutoPromote()) renderCurrentPage(true);
     }
 
     function avgPillHTML(avg, provisional) {
@@ -2360,9 +2425,7 @@
       if (view === 'hk1') {
         html = renderSemTable('hk1', '📘 Học kì 1');
       } else if (view === 'hk2') {
-        html = hasHK2
-          ? renderSemTable('hk2', '📗 Học kì 2')
-          : '<div class="chart-annotation info">Chưa có thông tin điểm Học kì 2. Khi có điểm, bảng sẽ tự động cập nhật tại đây.</div>';
+        html = renderSemTable('hk2', '📗 Học kì 2');
       } else if (view === 'year') {
         html = allFinal ? `
           <h3 style="margin:14px 0 8px; font-size:0.98rem;">🏆 Bảng điểm tổng kết cuối năm (HK2 hệ số 2)</h3>
@@ -2831,7 +2894,7 @@
       avatar.innerHTML = u.loggedIn && u.avatar ? `<img src="${escapeHtml(u.avatar)}" alt="">` : (u.loggedIn ? escapeHtml((u.name||'U').charAt(0).toUpperCase()) : '?');
       document.getElementById('settingsProfileAction').innerHTML = `<button class="btn btn-soft" onclick="openSettingsModal('profileSettingsModal')">✏️ Chỉnh sửa</button>${u.loggedIn ? '' : `<button class="google-btn" onclick="startGoogleLogin()">Đăng nhập Google</button>`}`;
       document.getElementById('set_name').value = state.user.name || '';
-      document.getElementById('set_age').value = state.user.age || '';
+      document.getElementById('set_age').value = state.user.dob || '';
       document.getElementById('set_examBlock').value = state.settings.examBlock;
       document.getElementById('set_targetTitle').value = state.settings.targetTitle;
       document.getElementById('set_alertScore').value = state.settings.alertScore;
@@ -2847,17 +2910,12 @@
 
     function saveSettingsForm() {
       const name = document.getElementById('set_name').value.trim();
-      const ageRaw = document.getElementById('set_age').value.trim();
-      const age = ageRaw === '' ? null : Number(ageRaw);
-      if (ageRaw !== '' && !validAge(age)) { showToast('Tuổi phải là số nguyên từ 14 đến 20.', 'error'); return; }
+      const dob = document.getElementById('set_age').value.trim() || null;
+      if (dob && !validDob(dob)) { showToast('Ngày sinh không hợp lệ (tuổi phải từ 12 đến 25).', 'error'); return; }
       const th = readThresholds('set_alertScore', 'set_highScore', 'set_flucWarn');
       if (!th) return;
       state.user.name = name; // để trống thì xóa thật
-      if (name) state.user.loggedIn = true;
-      if (age !== state.user.age) {
-        state.user.age = age;
-        if (age) state.activeYear = ageToClass(age); // chỉ đổi lớp đang xem khi tuổi thật sự thay đổi
-      }
+      setDob(dob); // chỉ đổi lớp đang xem khi ngày sinh thật sự thay đổi
       Object.assign(state.settings, th, {
         examBlock: document.getElementById('set_examBlock').value,
         targetTitle: document.getElementById('set_targetTitle').value
@@ -2870,6 +2928,7 @@
 
     function logout() {
       if (!confirm('Đăng xuất? Bảng điểm và dữ liệu vẫn được giữ trên trình duyệt này.')) return;
+      try { window.stFirebaseSignOut && window.stFirebaseSignOut(); } catch {}
       try { google.accounts.id.disableAutoSelect(); } catch {}
       Object.assign(state.user, { loggedIn: false, name: '', email: '', avatar: '' });
       saveState();
@@ -2943,6 +3002,7 @@
       const switched = state.activeYear !== yr;
       state.activeYear = yr;
       saveState();
+      maybeAutoPromote();
       closeModal('quickScoreModal');
       renderCurrentPage();
       showToast(parsed.value === null ? 'Đã xóa điểm.' : `Đã lưu ${parsed.value} — ${sub}${switched ? ` (đang xem Lớp ${yr})` : ''}.`);
@@ -3006,6 +3066,8 @@
     function resetAllData() {
       if (!confirm('Xóa toàn bộ dữ liệu tài khoản, bảng điểm, lịch thi và cài đặt?')) return;
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(TKB_KEY);
+      tkbSig = null;
       state = getDefaultState();
       applyTheme();
       navigate('home');
@@ -3054,6 +3116,7 @@
     // Init App
     applyTheme();
     renderTopUser();
+    maybeAutoPromote();
     navigate(state.page || 'home');
     if (state.user.loggedIn && !state.user.onboarded) openOnboardingModal();
 
@@ -3093,129 +3156,159 @@
 
     // Đồng bộ giữa nhiều tab (không ghi lại để tránh vòng lặp)
     window.addEventListener('storage', e => {
-      if (e.key !== STORAGE_KEY || !e.newValue) return;
+      if ((e.key !== STORAGE_KEY && e.key !== TKB_KEY) || !e.newValue) return;
       const a = document.activeElement;
       if (a && ['INPUT', 'SELECT', 'TEXTAREA'].includes(a.tagName)) return;
       try {
         const page = state.page;
-        state = normalizeState(JSON.parse(e.newValue));
+        state = loadState();
         state.page = page;
         applyTheme();
         renderCurrentPage(true);
       } catch {}
     });
   </script>
-<!-- Thư viện Firebase (Dùng trực tiếp trên HTML/JS thuần) -->
-<script src="https://gstatic.com"></script>
-<script src="https://gstatic.com"></script>
-<script src="https://gstatic.com"></script>
-
+<!-- Firebase (bản compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-  // 1. Cấu hình dự án studytrack-a19ec của bạn
-  const firebaseConfig = {
+(function () {
+  if (typeof firebase === 'undefined') { console.warn('Không tải được Firebase: app chỉ lưu trên máy này.'); return; }
+  firebase.initializeApp({
     apiKey: "AIzaSyDXP1tY0o8aEuJMowmcFO9nebgqvfwqAZw",
-    authDomain: "://firebaseapp.com",
+    authDomain: "studytrack-a19ec.firebaseapp.com",
     projectId: "studytrack-a19ec",
     storageBucket: "studytrack-a19ec.firebasestorage.app",
     messagingSenderId: "85849431886",
     appId: "1:85849431886:web:437276fe24a3a4c683481f",
     measurementId: "G-NSQG82MZZ9"
-  };
-
-  firebase.initializeApp(firebaseConfig);
+  });
   const auth = firebase.auth();
   const db = firebase.firestore();
+  const META_KEY = STORAGE_KEY + '_cloud';   // {uid, base}: tài khoản + mốc đã đồng bộ gần nhất
+  const EDIT_KEY = STORAGE_KEY + '_edited';  // thời điểm sửa cục bộ gần nhất
+  const MAX_BYTES = 900000;                  // Firestore giới hạn 1 MiB / document
+  let ready = false, pushTimer = null, warned = false;
 
-  let isSyncingFromCloud = false;
-  let syncTimeout = null;
+  const readMeta = () => { try { return JSON.parse(localStorage.getItem(META_KEY)) || {}; } catch { return {}; } };
+  const localEdit = () => Number(localStorage.getItem(EDIT_KEY)) || 0;
+  const setBase = (uid, ts) => localStorage.setItem(META_KEY, JSON.stringify({ uid: uid, base: ts }));
+  const warn = msg => { if (!warned) { warned = true; showToast(msg, 'error'); } };
+  // Chỉ đồng bộ dữ liệu app (không gồm ảnh thời khóa biểu, không gồm key của app khác)
+  const slim = () => { const { timetables, ...rest } = state; return JSON.stringify(rest); };
+  const isBlank = () => !state.exams.length && ['10', '11', '12'].every(y =>
+    Object.values(state.grades[y] || {}).every(g => ['hk1', 'hk2'].every(h =>
+      g[h].tx.every(v => v === null) && g[h].gk === null && g[h].ck === null)));
 
-  // 2. Hàm Đăng nhập Google qua Firebase
-  function signInWithFirebaseGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch((err) => {
-      alert("Lỗi đăng nhập Google: " + err.message);
-    });
-  }
-
-  // 3. Hàm Đăng xuất
-  function signOutFirebaseGoogle() {
-    auth.signOut().then(() => {
-      location.reload();
-    });
-  }
-
-  // 4. Nối với nút Google Client ID cũ của bạn (nếu bạn dùng gsi/client)
-  // Gọi hàm này bên trong hàm callback nhận credential từ Google Client ID của bạn:
-  // ví dụ: syncGoogleCredentialToFirebase(response.credential);
-  function syncGoogleCredentialToFirebase(idToken) {
-    const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
-    auth.signInWithCredential(credential).catch((err) => {
-      console.error("Lỗi xác thực token Google với Firebase:", err);
-    });
-  }
-
-  // 5. Tự động đẩy toàn bộ localStorage của web lên mây
-  function pushAllLocalDataToCloud(user) {
-    if (!user || isSyncingFromCloud) return;
-    clearTimeout(syncTimeout);
-    syncTimeout = setTimeout(async () => {
-      try {
-        const snapshotData = {};
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          snapshotData[key] = localStorage.getItem(key);
-        }
-        await db.collection("users").doc(user.uid).set({
-          email: user.email,
-          displayName: user.displayName,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          storageDump: snapshotData
-        }, { merge: true });
-        console.log("✅ Đã đồng bộ dữ liệu StudyTrack lên mây!");
-      } catch (e) {
-        console.error("❌ Lỗi đồng bộ (Kiểm tra dung lượng ảnh TKB < 1MB):", e);
-      }
-    }, 800); // Đợi 0.8s sau thao tác cuối mới lưu để tiết kiệm lượt ghi
-  }
-
-  // 6. Tự động bắt mọi thao tác lưu dữ liệu (thêm điểm, sửa cài đặt, đổi giao diện...)
-  const _origSetItem = localStorage.setItem.bind(localStorage);
-  localStorage.setItem = function(key, value) {
-    _origSetItem(key, value);
-    if (auth.currentUser) pushAllLocalDataToCloud(auth.currentUser);
-  };
-
-  const _origRemoveItem = localStorage.removeItem.bind(localStorage);
-  localStorage.removeItem = function(key) {
-    _origRemoveItem(key);
-    if (auth.currentUser) pushAllLocalDataToCloud(auth.currentUser);
-  };
-
-  // 7. Khi mở web ở máy khác và đăng nhập -> Tự động kéo dữ liệu về
-  auth.onAuthStateChanged(async (user) => {
-    if (!user) return;
-    const docRef = db.collection("users").doc(user.uid);
-    const docSnap = await docRef.get();
-
-    if (docSnap.exists && docSnap.data().storageDump) {
-      const cloudDump = docSnap.data().storageDump;
-      const cloudKeys = Object.keys(cloudDump);
-      if (cloudKeys.length > 0) {
-        isSyncingFromCloud = true;
-        cloudKeys.forEach((k) => _origSetItem(k, cloudDump[k]));
-        isSyncingFromCloud = false;
-
-        // Tải lại trang 1 lần duy nhất sau khi kéo dữ liệu mới về để hiển thị bảng điểm
-        if (!sessionStorage.getItem("st_synced_" + user.uid)) {
-          sessionStorage.setItem("st_synced_" + user.uid, "1");
-          location.reload();
-        }
-      }
-    } else {
-      // Tài khoản đăng nhập lần đầu -> Đẩy dữ liệu hiện có ở máy này lên mây
-      pushAllLocalDataToCloud(user);
+  async function push(user) {
+    const json = slim();
+    if (new Blob([json]).size > MAX_BYTES) { warn('Dữ liệu quá lớn để đồng bộ lên mây.'); return; }
+    const ts = localEdit() || Date.now();
+    try {
+      await db.collection('users').doc(user.uid).set({
+        email: user.email || '',
+        displayName: user.displayName || '',
+        stateJson: json,
+        clientUpdatedAt: ts,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      setBase(user.uid, ts);
+    } catch (e) {
+      console.error('Lỗi đồng bộ lên mây:', e);
+      warn('Không lưu được lên mây (' + (e.code || e.message) + '). Dữ liệu vẫn được giữ trên máy.');
     }
+  }
+
+  function pull(data, uid) {
+    const page = state.page;
+    state = normalizeState(Object.assign({}, JSON.parse(data.stateJson), { timetables: state.timetables }));
+    state.page = page;
+    saveState(true);
+    localStorage.setItem(EDIT_KEY, String(data.clientUpdatedAt || 0));
+    setBase(uid, data.clientUpdatedAt || 0);
+    applyTheme();
+    renderCurrentPage(true);
+    if (state.user.onboarded) closeModal('onboardingModal');
+  }
+
+  // Máy đang giữ dữ liệu của tài khoản khác và tài khoản mới chưa có gì trên mây: bắt đầu sạch
+  function fresh() {
+    const u = state.user;
+    state = getDefaultState();
+    state.user = Object.assign({}, state.user, u, { onboarded: false, age: null });
+    saveState(true);
+    applyTheme();
+    renderCurrentPage(true);
+    if (state.user.loggedIn) openOnboardingModal();
+  }
+
+  async function reconcile(user) {
+    ready = false;
+    try {
+      const snap = await db.collection('users').doc(user.uid).get();
+      const hasCloud = snap.exists && !!snap.data().stateJson;
+      const data = hasCloud ? snap.data() : null;
+      const meta = readMeta();
+      const same = meta.uid === user.uid;
+      const base = same ? (meta.base || 0) : 0;
+      const localDirty = localEdit() > base && !isBlank();
+      if (meta.uid && !same) {
+        if (hasCloud) pull(data, user.uid);
+        else { fresh(); await push(user); }
+      } else if (!hasCloud) {
+        await push(user);
+      } else {
+        const cloudNewer = (data.clientUpdatedAt || 0) > base;
+        if (cloudNewer && !localDirty) pull(data, user.uid);
+        else if (localDirty && !cloudNewer) await push(user);
+        else if (localDirty && cloudNewer) {
+          if (confirm('Dữ liệu trên máy này và trên mây đều có thay đổi mới.\nOK = dùng dữ liệu trên MÂY (ghi đè máy này)\nHủy = giữ dữ liệu MÁY NÀY (ghi đè mây)')) pull(data, user.uid);
+          else await push(user);
+        }
+      }
+    } catch (e) {
+      console.error('Lỗi đọc dữ liệu từ mây:', e);
+      warn('Không kết nối được kho đồng bộ (' + (e.code || e.message) + '). App vẫn chạy bằng dữ liệu trên máy.');
+    }
+    ready = true;
+  }
+
+  // app gọi sau mỗi lần saveState()
+  window.stCloudTouch = function () {
+    localStorage.setItem(EDIT_KEY, String(Date.now()));
+    const u = auth.currentUser;
+    if (!u || !ready) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(() => { pushTimer = null; push(u); }, 800);
+  };
+
+  window.stFirebaseSignIn = function (idToken, email) {
+    if (auth.currentUser && auth.currentUser.email === email) return;
+    auth.signInWithCredential(firebase.auth.GoogleAuthProvider.credential(idToken)).catch(e => {
+      console.error('Lỗi đăng nhập Firebase:', e);
+      warn('Đăng nhập Firebase lỗi (' + (e.code || e.message) + '). Kiểm tra Client ID và Authorized domains trong Firebase Console.');
+    });
+  };
+
+  window.stFirebaseSignOut = function () {
+    const u = auth.currentUser;
+    clearTimeout(pushTimer); pushTimer = null;
+    const p = u && ready ? push(u) : Promise.resolve();
+    ready = false;
+    return p.then(() => auth.signOut());
+  };
+
+  auth.onAuthStateChanged(user => {
+    clearTimeout(pushTimer); pushTimer = null; ready = false;
+    if (user) reconcile(user);
   });
+
+  document.addEventListener('visibilitychange', () => {
+    const u = auth.currentUser;
+    if (document.visibilityState === 'hidden' && pushTimer && u && ready) { clearTimeout(pushTimer); pushTimer = null; push(u); }
+  });
+})();
 </script>
 
 </body>
