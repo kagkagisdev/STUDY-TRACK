@@ -1037,6 +1037,7 @@
     .advice-box.advice-glow:hover { border-color: transparent; }
     .advice-glow .advice-list { padding-left: 0; list-style: none; gap: 8px; }
     .adv-note { font-size: .84rem; color: var(--muted); }
+    .adv-line { font-size: .88rem; line-height: 1.55; }
     .adv-row { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 9px 12px; }
     .adv-row.ok { opacity: .72; }
     .adv-top { display: flex; align-items: center; gap: 8px; }
@@ -2283,25 +2284,33 @@
         const num = tx.reduce((a, b) => a + c(b), 0) + (hasGK ? 2 * c(sem.gk) : 0);
         return Math.max(0, Math.ceil(((req * 100 - 5) * denom - num) / 30) / 10);
       };
-      const rows = subAvgs.map(x => {
+      const fmt = n => n.toFixed(1);
+      const info = subAvgs.map(x => {
         const goal = goalSet.has(x.name), req = goal ? T : 6.5, cur = x.avg;
         const ok = cur !== null && cur >= req;
-        let hint;
-        if (ok) hint = '✅ Đã đạt mức yêu cầu';
-        else if (cur === null) hint = `Chưa có điểm — cần ĐTB <strong>≥ ${req.toFixed(1)}</strong>`;
-        else {
-          hint = `Cần ĐTB <strong>≥ ${req.toFixed(1)}</strong> (thiếu <strong style="color:var(--danger)">+${(req - cur).toFixed(1)}</strong>)`;
-          if (mode !== 'year') {
-            const k = needCK(x.data[mode], req);
-            if (k !== null) hint += k > 10 ? ' — chỉ điểm Cuối kì chưa đủ, cần kéo thêm TX/Giữa kì' : ` → điểm Cuối kì cần <strong>≥ ${k.toFixed(1)}</strong>`;
-          }
-        }
-        return `<li class="adv-row${ok ? ' ok' : ''}"><div class="adv-top"><span class="adv-name">${x.name}</span><span class="adv-tag">${goal ? `mục tiêu ≥ ${T.toFixed(1)}` : 'sàn ≥ 6.5'}</span><span class="pill ${pillClass(cur)}">${cur === null ? '--' : cur.toFixed(1)}</span></div><div class="adv-hint">${hint}</div></li>`;
-      }).join('');
-      const notes = [`Mục tiêu <strong>${targetName}</strong>: mọi môn ≥ 6.5, có ≥ 6 môn ≥ ${T.toFixed(1)} và ≥ 1 môn Toán/Văn/Ngoại ngữ ≥ 8.0. Hệ thống chọn 6 môn gần mức mục tiêu nhất để kéo.`];
-      if (pfFail.length) notes.push(`Cần chuyển <strong>${pfFail.join(', ')}</strong> sang <strong>Đạt</strong>.`);
-      if (subAvgs.length >= 6 && !pfFail.length && subAvgs.every(x => x.avg !== null && x.avg >= (goalSet.has(x.name) ? T : 6.5))) notes.push(`🎉 Điểm hiện tại đã đạt đủ điều kiện ${targetName}!`);
-      document.getElementById('adviceList').innerHTML = notes.map(n => `<li class="adv-note">${n}</li>`).join('') + rows;
+        const ck = !ok && cur !== null && mode !== 'year' ? needCK(x.data[mode], req) : null;
+        return { name: x.name.replace(/ \(.*\)$/, ''), cur, req, ok, goal, ck };
+      });
+      const gap = i => (i.cur === null ? 99 : i.req - i.cur);
+      const todo = info.filter(i => !i.ok).sort((a, b) => gap(a) - gap(b));
+      const done = info.filter(i => i.ok && i.goal);
+      const floorOk = info.filter(i => i.ok && !i.goal);
+      const tShort = target === 'HSXX' ? 'HSXX' : 'HSG';
+      const part = i => i.cur === null
+        ? `${i.name} (chưa có điểm, cần ≥ ${fmt(i.req)})`
+        : `${i.name} ${fmt(i.cur)}→${fmt(i.req)}` + (i.ck === null ? '' : i.ck > 10 ? ' (cần kéo thêm TX/Giữa kì)' : ` (Cuối kì ≥ ${fmt(i.ck)})`);
+      const allDone = subAvgs.length >= 6 && !todo.length && !pfFail.length;
+      const lines = [];
+      const sub6 = todo.filter(i => !i.goal).length;
+      lines.push(`<span title="Điều kiện: mọi môn ≥ 6.5, có ≥ 6 môn ≥ ${fmt(T)} và ≥ 1 môn Toán/Văn/Ngoại ngữ ≥ 8.0"><strong>📊 Tình hình ${tShort}:</strong> <strong>${done.length}/${goalSet.size}</strong> môn đạt ≥ ${fmt(T)}${sub6 ? ` · ${sub6} môn chưa đạt sàn 6.5` : ' · mọi môn đã ≥ 6.5'}.</span>`);
+      if (allDone) lines.push(`🎉 Điểm hiện tại đã đủ điều kiện <strong>${targetName}</strong>, hãy giữ vững phong độ!`);
+      else {
+        if (todo.length) lines.push(`<strong>🔺 Cần kéo:</strong> ${todo.slice(0, 4).map(part).join('; ')}${todo.length > 4 ? `; và ${todo.length - 4} môn khác` : ''}.`);
+        if (done.length || floorOk.length) lines.push(`<strong>✅ Đã đạt:</strong> ${done.map(i => `${i.name} ${fmt(i.cur)}`).join(', ')}${done.length && floorOk.length ? '. ' : ''}${floorOk.length ? `Giữ trên 6.5: ${floorOk.map(i => `${i.name} ${fmt(i.cur)}`).join(', ')}` : ''}.`);
+        if (todo.length) lines.push(`<strong>💡 Ưu tiên:</strong> ${todo[0].cur === null ? `nhập điểm ${todo[0].name} trước để tính chính xác` : `bắt đầu từ ${todo[0].name} (chỉ thiếu ${fmt(gap(todo[0]))})`}${todo.length > 1 ? `, rồi ${todo.slice(1, 3).map(i => i.name).join(' và ')}` : ''}.`);
+        if (pfFail.length) lines.push(`<strong>⚠️ Lưu ý:</strong> cần chuyển ${pfFail.join(', ')} sang Đạt.`);
+      }
+      document.getElementById('adviceList').innerHTML = lines.map(l => `<li class="adv-line">${l}</li>`).join('');
 
       document.getElementById('homeSubjectsGrid').innerHTML = subAvgs.map(s => `
         <div class="sub-mini-card">
