@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>StudyTrack THPT </title>
+  <title>StudyTrack </title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
@@ -74,6 +74,7 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background: var(--bg);
@@ -3104,5 +3105,118 @@
       } catch {}
     });
   </script>
+<!-- Thư viện Firebase (Dùng trực tiếp trên HTML/JS thuần) -->
+<script src="https://gstatic.com"></script>
+<script src="https://gstatic.com"></script>
+<script src="https://gstatic.com"></script>
+
+<script>
+  // 1. Cấu hình dự án studytrack-a19ec của bạn
+  const firebaseConfig = {
+    apiKey: "AIzaSyDXP1tY0o8aEuJMowmcFO9nebgqvfwqAZw",
+    authDomain: "://firebaseapp.com",
+    projectId: "studytrack-a19ec",
+    storageBucket: "studytrack-a19ec.firebasestorage.app",
+    messagingSenderId: "85849431886",
+    appId: "1:85849431886:web:437276fe24a3a4c683481f",
+    measurementId: "G-NSQG82MZZ9"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  let isSyncingFromCloud = false;
+  let syncTimeout = null;
+
+  // 2. Hàm Đăng nhập Google qua Firebase
+  function signInWithFirebaseGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).catch((err) => {
+      alert("Lỗi đăng nhập Google: " + err.message);
+    });
+  }
+
+  // 3. Hàm Đăng xuất
+  function signOutFirebaseGoogle() {
+    auth.signOut().then(() => {
+      location.reload();
+    });
+  }
+
+  // 4. Nối với nút Google Client ID cũ của bạn (nếu bạn dùng gsi/client)
+  // Gọi hàm này bên trong hàm callback nhận credential từ Google Client ID của bạn:
+  // ví dụ: syncGoogleCredentialToFirebase(response.credential);
+  function syncGoogleCredentialToFirebase(idToken) {
+    const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
+    auth.signInWithCredential(credential).catch((err) => {
+      console.error("Lỗi xác thực token Google với Firebase:", err);
+    });
+  }
+
+  // 5. Tự động đẩy toàn bộ localStorage của web lên mây
+  function pushAllLocalDataToCloud(user) {
+    if (!user || isSyncingFromCloud) return;
+    clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(async () => {
+      try {
+        const snapshotData = {};
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          snapshotData[key] = localStorage.getItem(key);
+        }
+        await db.collection("users").doc(user.uid).set({
+          email: user.email,
+          displayName: user.displayName,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          storageDump: snapshotData
+        }, { merge: true });
+        console.log("✅ Đã đồng bộ dữ liệu StudyTrack lên mây!");
+      } catch (e) {
+        console.error("❌ Lỗi đồng bộ (Kiểm tra dung lượng ảnh TKB < 1MB):", e);
+      }
+    }, 800); // Đợi 0.8s sau thao tác cuối mới lưu để tiết kiệm lượt ghi
+  }
+
+  // 6. Tự động bắt mọi thao tác lưu dữ liệu (thêm điểm, sửa cài đặt, đổi giao diện...)
+  const _origSetItem = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, value) {
+    _origSetItem(key, value);
+    if (auth.currentUser) pushAllLocalDataToCloud(auth.currentUser);
+  };
+
+  const _origRemoveItem = localStorage.removeItem.bind(localStorage);
+  localStorage.removeItem = function(key) {
+    _origRemoveItem(key);
+    if (auth.currentUser) pushAllLocalDataToCloud(auth.currentUser);
+  };
+
+  // 7. Khi mở web ở máy khác và đăng nhập -> Tự động kéo dữ liệu về
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) return;
+    const docRef = db.collection("users").doc(user.uid);
+    const docSnap = await docRef.get();
+
+    if (docSnap.exists && docSnap.data().storageDump) {
+      const cloudDump = docSnap.data().storageDump;
+      const cloudKeys = Object.keys(cloudDump);
+      if (cloudKeys.length > 0) {
+        isSyncingFromCloud = true;
+        cloudKeys.forEach((k) => _origSetItem(k, cloudDump[k]));
+        isSyncingFromCloud = false;
+
+        // Tải lại trang 1 lần duy nhất sau khi kéo dữ liệu mới về để hiển thị bảng điểm
+        if (!sessionStorage.getItem("st_synced_" + user.uid)) {
+          sessionStorage.setItem("st_synced_" + user.uid, "1");
+          location.reload();
+        }
+      }
+    } else {
+      // Tài khoản đăng nhập lần đầu -> Đẩy dữ liệu hiện có ở máy này lên mây
+      pushAllLocalDataToCloud(user);
+    }
+  });
+</script>
+
 </body>
 </html>
