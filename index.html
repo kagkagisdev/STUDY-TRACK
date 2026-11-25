@@ -2,11 +2,16 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>StudyTrack </title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
+    /* Emoji/font fallback and notification controls */
+    body, button, input, select, textarea {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+                   Arial, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+    }
     /* Theme Variables (Default = Theme 1: #FFDBBB, #CCBEB1, #997E67, #664930) */
     :root {
       --bg: #FAF5F0;
@@ -76,11 +81,13 @@
 
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+                   "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.5;
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       transition: background 0.25s ease, color 0.25s ease;
     }
@@ -956,12 +963,33 @@
     }
 
     @media (max-width: 820px) {
-      .sidebar { transform: translateX(-100%); }
+      .sidebar { transform: translateX(-100%); width: min(86vw, 286px); padding-top:max(14px, env(safe-area-inset-top)); padding-bottom:max(14px, env(safe-area-inset-bottom)); }
       .sidebar.open { transform: translateX(0); }
       .main-wrap { margin-left: 0; }
       .menu-toggle { display: inline-grid; place-items: center; }
       .subjects-grid { grid-template-columns: 1fr; }
       .content-area { padding: 16px; }
+      .top-header { padding:10px 12px; }
+      .page-title-bar { max-width:42vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .user-pill-btn { padding-right:8px; }
+      .user-pill-meta { max-width:120px; }
+      .user-pill-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .welcome-hero { padding:20px; border-radius:18px; }
+      .welcome-hero h1 { font-size:1.35rem; }
+      .welcome-hero p { font-size:.88rem; }
+      .card-header { align-items:flex-start; }
+      .segmented { max-width:100%; }
+      .seg-btn { min-height:38px; }
+      .table-wrap { overscroll-behavior-inline:contain; }
+      .input, select, .score-input { font-size:16px; }
+      .modal-backdrop { align-items:flex-end; padding:0; }
+      .modal { max-height:calc(100dvh - 12px); max-height:min(92dvh, calc(100dvh - env(safe-area-inset-top) - 12px)); border-radius:20px 20px 0 0; padding:18px 16px calc(18px + env(safe-area-inset-bottom)); }
+      .modal-footer { position:sticky; bottom:0; background:var(--card); padding-bottom:max(4px, env(safe-area-inset-bottom)); }
+      .fab-add { width:56px;height:56px;right:max(16px, env(safe-area-inset-right));bottom:max(16px, env(safe-area-inset-bottom)); }
+      #toastBox { bottom:max(18px, env(safe-area-inset-bottom)); width:calc(100% - 32px); }
+      .toast { max-width:100%; text-align:center; }
+      .calendar-grid { gap:3px; }
+      .subjects-mini-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
     }
 
     .sidebar-overlay {
@@ -1013,6 +1041,13 @@
     .settings-details { border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:16px; background:var(--glass); }
     .settings-details summary { cursor:pointer; font-weight:800; list-style:none; display:flex; justify-content:space-between; }
     .settings-details summary::-webkit-details-marker { display:none; }
+    .sync-toggle-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .sync-switch { position:relative; display:inline-flex; width:48px; height:28px; flex-shrink:0; }
+    .sync-switch input { position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; z-index:2; }
+    .sync-switch .track { position:absolute; inset:0; border-radius:999px; background:var(--border); transition:.2s; }
+    .sync-switch .track::after { content:''; position:absolute; width:20px;height:20px;left:4px;top:4px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.2);transition:.2s; }
+    .sync-switch input:checked + .track { background:var(--primary); }
+    .sync-switch input:checked + .track::after { transform:translateX(20px); }
     .profile-hero { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
     .profile-meta { display:flex; align-items:center; gap:14px; }
     .profile-large-avatar { width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.22);font-size:1.5rem;font-weight:800;overflow:hidden; }
@@ -1021,6 +1056,22 @@
       .calendar-cell {min-height:48px;padding:5px;font-size:.72rem}
       .calendar-shell {padding:10px}
       .card {padding:15px}
+      .subjects-mini-grid { grid-template-columns:1fr; }
+      .fluc-list { grid-template-columns:1fr; }
+      .bar-chart-box { height:280px; }
+      .mini-chart-box { height:210px; }
+      .theme-options { grid-template-columns:1fr; }
+      .form-grid { grid-template-columns:1fr; }
+      .form-grid .field { grid-column:1 / -1 !important; }
+      .card-hover, .card:hover, .tier-card:hover, .fluc-item:hover, .rank-status-card:hover, .advice-box:hover, .sub-mini-card:hover, .sub-chart-card:hover, .theme-card:hover { transform:none; }
+      button:hover, .btn:hover, .nav-item:hover, .seg-btn:hover, .google-btn:hover, .year-mini-btn:hover { transform:none; }
+      .btn, .google-btn, .seg-btn, .year-mini-btn { min-height:42px; }
+      .top-header .user-pill-class { display:none; }
+      .user-pill-meta { max-width:86px; }
+      .welcome-hero { align-items:flex-start; }
+      .hero-badges { gap:6px; }
+      .hero-badge { max-width:100%; }
+      .rank-summary-box { grid-template-columns:1fr; }
     }
     @media(prefers-reduced-motion:reduce) { *,*::before,*::after {animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important} }
 
@@ -1044,6 +1095,64 @@
     .adv-name { font-weight: 700; flex: 1; }
     .adv-tag { font-size: .72rem; color: var(--muted); }
     .adv-hint { font-size: .82rem; margin-top: 4px; }
+    .advice-list .ai-reveal {
+      opacity:1;
+      transform:none;
+    }
+    .advice-list.advice-reveal-run .ai-reveal {
+      opacity: 0;
+      transform: translateY(7px);
+      animation: aiAdviceReveal .48s cubic-bezier(.2,.75,.25,1) forwards;
+    }
+    .advice-list .ai-reveal strong {
+      background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary));
+      background-size: 200% 100%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: aiTextShimmer 2.4s ease-in-out infinite;
+    }
+    .advice-icon {
+      display:inline-grid;
+      place-items:center;
+      width:1.35em;
+      height:1.35em;
+      margin-right:5px;
+      border-radius:50%;
+      vertical-align:-0.18em;
+      font-size:.78em;
+      font-weight:900;
+      line-height:1;
+      background:var(--surface-muted);
+      color:var(--text);
+      -webkit-text-fill-color:currentColor;
+    }
+    .advice-icon.info { background:#dbeafe; color:#1d4ed8; }
+    .advice-icon.pull { background:#fee2e2; color:#b91c1c; clip-path:polygon(50% 10%,90% 85%,10% 85%); border-radius:3px; width:1.25em;height:1.25em;font-size:.82em; }
+    .advice-icon.done { background:#dcfce7; color:#15803d; }
+    .advice-icon.priority { background:#fef3c7; color:#9a6700; }
+    .advice-icon.warning { background:#ffedd5; color:#c2410c; border-radius:4px; }
+    .advice-title-icon {
+      display:inline-grid;
+      place-items:center;
+      width:20px;
+      height:20px;
+      margin-right:6px;
+      border-radius:50%;
+      background:linear-gradient(135deg,#fff7cc,#fde68a);
+      color:#a16207;
+      font-size:12px;
+      line-height:1;
+      vertical-align:-2px;
+      box-shadow:0 0 0 3px rgba(250,204,21,.12);
+    }
+    @keyframes aiAdviceReveal {
+      to { opacity:1; transform:translateY(0); }
+    }
+    @keyframes aiTextShimmer {
+      0%,100% { background-position:0% 50%; }
+      50% { background-position:100% 50%; }
+    }
     @media (prefers-reduced-motion: reduce) { .advice-box.advice-glow { animation: none; } }
   </style>
 </head>
@@ -1058,7 +1167,7 @@
       <div class="brand-icon">🎓</div>
       <div class="brand-text">
         <h2>StudyTrack 🎯</h2>
-        <span>👑premium</span>
+        <span>premium</span>
       </div>
     </div>
 
@@ -1077,7 +1186,7 @@
   <div class="main-wrap">
     <header class="top-header">
       <div class="top-left">
-        <button class="menu-toggle" aria-label="Mở menu" onclick="toggleSidebar(true)">☰</button>
+        <button class="menu-toggle" aria-label="Mở menu" aria-expanded="false" aria-controls="sidebar" onclick="toggleSidebar(true)">☰</button>
         <div class="page-title-bar" id="topPageTitle">Home</div>
       </div>
 
@@ -1245,7 +1354,10 @@
                 Hệ thống tự lấy <strong>điểm gần nhất</strong> của môn trong bảng điểm để tính ngày bắt đầu ôn (1 tuần – 3 tuần trước ngày thi)
               </div>
             </div>
-            <button class="btn btn-primary" onclick="openExamModal()">+ Thêm lịch kiểm tra</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+              <button id="examReminderBtn" class="btn btn-soft" onclick="enableExamNotifications()">🔔 Bật nhắc ôn</button>
+              <button class="btn btn-primary" onclick="openExamModal()">+ Thêm lịch kiểm tra</button>
+            </div>
           </div>
 
           <div id="examCalendar"></div><div class="table-wrap" id="examTableContainer"></div>
@@ -1334,6 +1446,18 @@
     <div class="modal">
       <div class="modal-header"><div class="modal-title">🗂️ Năm học &amp; dữ liệu nâng cao</div><button class="modal-close" onclick="closeSettingsModal('advancedSettingsModal')">✕</button></div>
       <div class="card" style="margin-bottom:12px"><div class="card-title" style="margin-bottom:10px">Năm học đang xem</div><div class="segmented"><button class="seg-btn" data-yr="10" onclick="switchYear('10')">Lớp 10</button><button class="seg-btn" data-yr="11" onclick="switchYear('11')">Lớp 11</button><button class="seg-btn" data-yr="12" onclick="switchYear('12')">Lớp 12</button></div></div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="sync-toggle-row">
+          <div>
+            <div class="card-title" style="margin-bottom:4px">☁️ Đồng bộ đám mây</div>
+            <div class="settings-modal-note" style="margin:0">Giữ dữ liệu điểm, cài đặt và lịch thi giữa các thiết bị. Thời khóa biểu vẫn giữ trên máy này.</div>
+          </div>
+          <label class="sync-switch" title="Bật hoặc tắt đồng bộ đám mây">
+            <input id="cloudSyncToggle" type="checkbox" onchange="setCloudSync(this.checked)" />
+            <span class="track"></span>
+          </label>
+        </div>
+      </div>
       <div class="card"><div class="card-title" style="margin-bottom:10px">💾 Dữ liệu &amp; sao lưu</div><div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn btn-soft" onclick="loadDemoData()">✨ Điền điểm mẫu</button><button class="btn btn-outline" onclick="exportJSON()">⬇️ Xuất JSON</button><button class="btn btn-outline" onclick="document.getElementById('importFile').click()">⬆️ Nhập JSON</button><input type="file" id="importFile" accept=".json" class="hidden" onchange="importJSON(event)"><button class="btn btn-danger" onclick="resetAllData()">🗑️ Đặt lại toàn bộ</button></div></div>
     </div>
   </div>
@@ -1342,7 +1466,7 @@
   <button class="fab-add" aria-label="Thêm điểm nhanh" title="Thêm điểm nhanh" onclick="openQuickScoreModal()">+</button>
 
   <!-- ==================== MODAL: QUICK ADD SCORE (+) ==================== -->
-  <div id="quickScoreModal" class="modal-backdrop hidden">
+  <div id="quickScoreModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeModal('quickScoreModal')">
     <div class="modal">
       <div class="modal-header">
         <div class="modal-title">➕ Thêm Điểm Thủ Công</div>
@@ -1393,7 +1517,7 @@
   </div>
 
   <!-- ==================== MODAL: ADD EXAM SCHEDULE ==================== -->
-  <div id="examModal" class="modal-backdrop hidden">
+  <div id="examModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeModal('examModal')">
     <div class="modal">
       <div class="modal-header">
         <div class="modal-title">📅 Thêm Lịch Kiểm Tra Mới</div>
@@ -1436,7 +1560,7 @@
   </div>
 
   <!-- ==================== MODAL: GOOGLE SIGN-IN & ONBOARDING ==================== -->
-  <div id="authModal" class="modal-backdrop hidden">
+  <div id="authModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeModal('authModal')">
     <div class="modal">
       <div class="modal-header">
         <div class="modal-title">🔐 Đăng nhập tài khoản Google</div>
@@ -1622,6 +1746,8 @@
           alertScore: 6.5,
           highScore: 8.0,
           flucWarnPct: 30,
+          cloudSync: false,
+          examNotifications: false,
           googleClientId: '',
           electives: defaultElectives
         },
@@ -1664,6 +1790,8 @@
       s.settings.highScore = num(s.settings.highScore, 8, 0, 10);
       if (s.settings.alertScore >= s.settings.highScore) { s.settings.alertScore = 6.5; s.settings.highScore = 8; }
       s.settings.flucWarnPct = num(s.settings.flucWarnPct, 30, 5, 100);
+      s.settings.cloudSync = s.settings.cloudSync === true;
+      s.settings.examNotifications = s.settings.examNotifications === true;
       s.settings.googleClientId = String(s.settings.googleClientId || '');
       const el = Array.isArray(s.settings.electives) ? s.settings.electives.filter(x => ELECTIVE_POOL.includes(x)) : [];
       s.settings.electives = el.length ? [...new Set(el)] : base.settings.electives;
@@ -1687,8 +1815,21 @@
         s.timetables[y] = t && typeof t.dataUrl === 'string' ? t : null;
       });
       s.exams = (Array.isArray(p.exams) ? p.exams : [])
-        .filter(e => e && e.date && e.subject && ['10', '11', '12'].includes(String(e.year)))
-        .map((e, i) => ({ ...e, year: String(e.year), id: e.id != null ? e.id : Date.now() + i }));
+        .filter(e => {
+          if (!e || !e.date || !e.subject) return false;
+          const d = parseExamDate(e.date);
+          return d && ['10', '11', '12'].includes(String(e.year));
+        })
+        .map((e, i) => ({
+          ...e,
+          year: String(e.year),
+          subject: String(e.subject),
+          type: String(e.type || 'Thường xuyên'),
+          title: String(e.title || '').trim(),
+          date: String(e.date),
+          time: /^([01]\d|2[0-3]):[0-5]\d$/.test(String(e.time || '')) ? String(e.time) : '',
+          id: e.id != null ? e.id : Date.now() + i
+        }));
       return s;
     }
 
@@ -1750,6 +1891,9 @@
       if (!m) return null;
       const d = new Date(+m[1], +m[2] - 1, +m[3]);
       return d.getFullYear() === +m[1] && d.getMonth() === +m[2] - 1 && d.getDate() === +m[3] ? d : null;
+    }
+    function parseExamDate(v) {
+      return parseDob(v);
     }
     function ageFromDob(dob) {
       const d = parseDob(dob);
@@ -1903,6 +2047,9 @@
     function toggleSidebar(open) {
       document.getElementById('sidebar').classList.toggle('open', open);
       document.getElementById('sidebarOverlay').classList.toggle('hidden', !open);
+      document.body.classList.toggle('modal-open', open);
+      const menu = document.querySelector('.menu-toggle');
+      if (menu) menu.setAttribute('aria-expanded', open ? 'true' : 'false');
     }
 
     // ==================== GOOGLE AUTH & ONBOARDING ====================
@@ -1935,6 +2082,7 @@
 
     const GOOGLE_CLIENT_ID = '530581194930-4ronvsbehs6skt4cs98evtpg1mjnjumj.apps.googleusercontent.com';
     let gisReady = false;
+    let pendingCloudSync = false;
 
     function initGoogleSignIn() {
       if (gisReady) return true;
@@ -2010,6 +2158,10 @@
       state.user.avatar = avatar;
       if (dob) setDob(dob);
       else if (!keepDob) setDob(null); // xóa ngày sinh ở ô nhập thì xóa thật
+      if (pendingCloudSync) {
+        state.settings.cloudSync = true;
+        pendingCloudSync = false;
+      }
       saveState();
       closeModal('authModal');
       renderTopUser();
@@ -2282,7 +2434,7 @@
         const tx = sem.tx.filter(isNum), hasGK = isNum(sem.gk);
         const denom = tx.length + (hasGK ? 2 : 0) + 3;
         const num = tx.reduce((a, b) => a + c(b), 0) + (hasGK ? 2 * c(sem.gk) : 0);
-        return Math.max(0, Math.ceil(((req * 100 - 5) * denom - num) / 30) / 10);
+        return Math.max(0, Math.ceil(((req * 100) * denom - num) / 30) / 10);
       };
       const fmt = n => n.toFixed(1);
       const info = subAvgs.map(x => {
@@ -2299,18 +2451,62 @@
       const part = i => i.cur === null
         ? `${i.name} (chưa có điểm, cần ≥ ${fmt(i.req)})`
         : `${i.name} ${fmt(i.cur)}→${fmt(i.req)}` + (i.ck === null ? '' : i.ck > 10 ? ' (cần kéo thêm TX/Giữa kì)' : ` (Cuối kì ≥ ${fmt(i.ck)})`);
-      const allDone = subAvgs.length >= 6 && !todo.length && !pfFail.length;
+      const achieved = subAvgs
+        .filter(s => s.avg !== null && s.avg >= T)
+        .sort((a, b) => b.avg - a.avg);
+      const needPull = subAvgs
+        .filter(s => s.avg === null || s.avg < T)
+        .sort((a, b) => {
+          if (a.avg === null && b.avg === null) return a.name.localeCompare(b.name, 'vi');
+          if (a.avg === null) return 1;
+          if (b.avg === null) return -1;
+          return (T - a.avg) - (T - b.avg);
+        });
+      const alertSubjects = subAvgs
+        .filter(s => s.avg !== null && s.avg < alertLimit)
+        .sort((a, b) => a.avg - b.avg);
+
       const lines = [];
-      const sub6 = todo.filter(i => !i.goal).length;
-      lines.push(`<span title="Điều kiện: mọi môn ≥ 6.5, có ≥ 6 môn ≥ ${fmt(T)} và ≥ 1 môn Toán/Văn/Ngoại ngữ ≥ 8.0"><strong>📊 Tình hình ${tShort}:</strong> <strong>${done.length}/${goalSet.size}</strong> môn đạt ≥ ${fmt(T)}${sub6 ? ` · ${sub6} môn chưa đạt sàn 6.5` : ' · mọi môn đã ≥ 6.5'}.</span>`);
-      if (allDone) lines.push(`🎉 Điểm hiện tại đã đủ điều kiện <strong>${targetName}</strong>, hãy giữ vững phong độ!`);
-      else {
-        if (todo.length) lines.push(`<strong>🔺 Cần kéo:</strong> ${todo.slice(0, 4).map(part).join('; ')}${todo.length > 4 ? `; và ${todo.length - 4} môn khác` : ''}.`);
-        if (done.length || floorOk.length) lines.push(`<strong>✅ Đã đạt:</strong> ${done.map(i => `${i.name} ${fmt(i.cur)}`).join(', ')}${done.length && floorOk.length ? '. ' : ''}${floorOk.length ? `Giữ trên 6.5: ${floorOk.map(i => `${i.name} ${fmt(i.cur)}`).join(', ')}` : ''}.`);
-        if (todo.length) lines.push(`<strong>💡 Ưu tiên:</strong> ${todo[0].cur === null ? `nhập điểm ${todo[0].name} trước để tính chính xác` : `bắt đầu từ ${todo[0].name} (chỉ thiếu ${fmt(gap(todo[0]))})`}${todo.length > 1 ? `, rồi ${todo.slice(1, 3).map(i => i.name).join(' và ')}` : ''}.`);
-        if (pfFail.length) lines.push(`<strong>⚠️ Lưu ý:</strong> cần chuyển ${pfFail.join(', ')} sang Đạt.`);
+      lines.push(`📊 <strong>Tình hình ${tShort}:</strong> ${achieved.length}/${subAvgs.length} môn đã đạt điểm trung bình mục tiêu ≥ ${fmt(T)}${needPull.length ? `; còn ${needPull.length} môn chưa đạt mục tiêu` : '; tất cả môn đã đạt mục tiêu'}.`);
+
+      if (needPull.length) {
+        const list = needPull.map(s =>
+          s.avg === null
+            ? `${s.name} (chưa có điểm)`
+            : `${s.name}: ${fmt(s.avg)} → ${fmt(T)}`
+        ).join(', ');
+        lines.push(`🔺 <strong>Cần kéo:</strong> ${list}.`);
+      } else {
+        lines.push('🔺 <strong>Cần kéo:</strong> Không có môn nào cần kéo thêm.');
       }
-      document.getElementById('adviceList').innerHTML = lines.map(l => `<li class="adv-line">${l}</li>`).join('');
+
+      if (achieved.length) {
+        lines.push(`✅ <strong>Đã đạt:</strong> ${achieved.map(s => `${s.name}: ${fmt(s.avg)}`).join(', ')}.`);
+      } else {
+        lines.push('✅ <strong>Đã đạt:</strong> Chưa có môn nào đạt điểm trung bình mục tiêu.');
+      }
+
+      const priority = needPull.find(s => s.avg !== null) || needPull[0];
+      if (priority) {
+        const priorityText = priority.avg === null
+          ? `${priority.name} (nhập điểm để xác định chính xác)`
+          : `${priority.name} — điểm trung bình ${fmt(priority.avg)}, chỉ cách mục tiêu ${fmt(T - priority.avg)} điểm`;
+        lines.push(`💡 <strong>Ưu tiên:</strong> ${priorityText}.`);
+      } else {
+        lines.push(`💡 <strong>Ưu tiên:</strong> Giữ vững phong độ để duy trì ${targetName}.`);
+      }
+
+      const warningItems = alertSubjects.map(s => `${s.name}: ${fmt(s.avg)}`);
+      if (pfFail.length) warningItems.push(...pfFail.map(m => `${m}: Chưa đạt`));
+      if (warningItems.length) {
+        lines.push(`⚠️ <strong>Lưu ý:</strong> Có ${warningItems.length} mục gần mức báo động hoặc cần cải thiện: ${warningItems.join(', ')}.`);
+      } else {
+        lines.push(`⚠️ <strong>Lưu ý:</strong> Không có môn nào dưới mức điểm báo động ${fmt(alertLimit)}.`);
+      }
+
+      document.getElementById('adviceList').innerHTML = lines
+        .map((l, i) => `<li class="adv-line ai-reveal" style="animation-delay:${i * 0.12}s">${l}</li>`)
+        .join('');
 
       document.getElementById('homeSubjectsGrid').innerHTML = subAvgs.map(s => `
         <div class="sub-mini-card">
@@ -2826,6 +3022,8 @@
     }
 
     function renderExamsPage() {
+      updateExamReminderButton();
+      checkStudyReminders(false);
       const list = state.exams
         .filter(e => e.year === state.activeYear)
         .sort((a, b) => {
@@ -2896,6 +3094,8 @@
 
     function renderSettingsPage() {
       applyTheme();
+      const cloudToggle = document.getElementById('cloudSyncToggle');
+      if (cloudToggle) cloudToggle.checked = state.settings.cloudSync === true;
       const u = state.user;
       document.getElementById('settingsProfileTitle').textContent = u.loggedIn ? (u.name || 'Người dùng') : 'Hello world!';
       document.getElementById('settingsProfileSub').textContent = u.loggedIn ? (u.email || 'Hồ sơ học tập StudyTrack') : 'Đăng nhập Google để lấy tên và ảnh đại diện cho hồ sơ.';
@@ -2965,9 +3165,12 @@
     // ==================== FLOATING + QUICK ADD SCORE ====================
     function openQuickScoreModal() {
       document.getElementById('qs_year').value = state.activeYear;
+      document.getElementById('qs_sem').value = 'hk1';
+      document.getElementById('qs_col').value = 'tx0';
       refreshQuickScoreSubjects();
       document.getElementById('qs_value').value = '';
       document.getElementById('quickScoreModal').classList.remove('hidden');
+      document.body.classList.add('modal-open');
       setTimeout(() => document.getElementById('qs_value').focus(), 80);
     }
 
@@ -3083,6 +3286,103 @@
       showToast('Đã đặt lại toàn bộ dữ liệu.');
     }
 
+    function setCloudSync(enabled) {
+      const toggle = document.getElementById('cloudSyncToggle');
+      if (enabled) {
+        if (!state.user.loggedIn) {
+          if (toggle) toggle.checked = false;
+          pendingCloudSync = true;
+          showToast('Hãy đăng nhập Google trước khi bật đồng bộ đám mây.', 'error');
+          startGoogleLogin();
+          return;
+        }
+        state.settings.cloudSync = true;
+        saveState();
+        if (toggle) toggle.checked = true;
+        showToast('Đã bật đồng bộ đám mây.');
+        return;
+      }
+
+      const confirmed = confirm(
+        'Tắt đồng bộ đám mây sẽ xóa dữ liệu điểm, hồ sơ, cài đặt và lịch thi khỏi bộ nhớ cục bộ của trình duyệt.\n\nThời khóa biểu sẽ được giữ lại.\n\nBạn đã tải bản sao lưu JSON chưa? OK = tải dữ liệu JSON xuống trước rồi tắt.'
+      );
+      if (!confirmed) {
+        if (toggle) toggle.checked = true;
+        return;
+      }
+
+      const shouldExport = confirm('Tải bản sao lưu JSON trước khi tắt đồng bộ?');
+      if (shouldExport) exportJSON();
+      try { window.stFirebaseSignOut && window.stFirebaseSignOut(); } catch {}
+
+      const timetables = state.timetables;
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEY + '_cloud');
+      localStorage.removeItem(STORAGE_KEY + '_edited');
+      tkbSig = null;
+      state = getDefaultState();
+      state.timetables = timetables;
+      state.settings.cloudSync = false;
+      applyTheme();
+      if (toggle) toggle.checked = false;
+      renderCurrentPage(true);
+      showToast('Đã tắt đồng bộ; dữ liệu điểm/lịch thi đã xóa khỏi máy, còn giữ thời khóa biểu.');
+    }
+
+    async function enableExamNotifications() {
+      if (!('Notification' in window)) {
+        showToast('Trình duyệt này không hỗ trợ thông báo nhắc ôn.', 'error');
+        return;
+      }
+      let permission = Notification.permission;
+      if (permission === 'default') permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        state.settings.examNotifications = false;
+        saveState();
+        updateExamReminderButton();
+        showToast('Bạn đã từ chối hoặc chưa cho phép thông báo.', 'error');
+        return;
+      }
+      state.settings.examNotifications = true;
+      saveState();
+      updateExamReminderButton();
+      showToast('Đã bật thông báo nhắc ôn lịch kiểm tra.');
+      checkStudyReminders(true);
+    }
+
+    function updateExamReminderButton() {
+      const btn = document.getElementById('examReminderBtn');
+      if (!btn) return;
+      const enabled = state.settings.examNotifications && 'Notification' in window && Notification.permission === 'granted';
+      btn.textContent = enabled ? '🔕 Tắt nhắc ôn' : '🔔 Bật nhắc ôn';
+      btn.onclick = enabled ? disableExamNotifications : enableExamNotifications;
+    }
+
+    function disableExamNotifications() {
+      state.settings.examNotifications = false;
+      saveState();
+      updateExamReminderButton();
+      showToast('Đã tắt thông báo nhắc ôn.');
+    }
+
+    function checkStudyReminders(force) {
+      if (!state.settings.examNotifications || !('Notification' in window) || Notification.permission !== 'granted') return;
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      state.exams
+        .filter(ex => ex.year === state.activeYear)
+        .forEach(ex => {
+          const plan = calcStudyPlan(ex.subject, ex.date, ex.year);
+          if (plan.diffDays < 0 || !plan.inStudyWindow) return;
+          const key = `studytrack_reminder_${ex.id}_${ex.date}_${plan.daysBefore}`;
+          if (!force && localStorage.getItem(key)) return;
+          const message = plan.diffDays === 0
+            ? `Hôm nay là lịch kiểm tra ${ex.subject}.`
+            : `Đã đến lịch ôn ${ex.subject}; còn ${plan.diffDays} ngày đến kiểm tra.`;
+          new Notification('StudyTrack - Nhắc ôn tập', { body: message, tag: key });
+          localStorage.setItem(key, '1');
+        });
+    }
+
     // ==================== HELPERS & INIT ====================
     function openSettingsModal(id) {
       const modal = document.getElementById(id);
@@ -3097,6 +3397,7 @@
 
     function closeModal(id) {
       document.getElementById(id).classList.add('hidden');
+      if (!document.querySelector('.modal-backdrop:not(.hidden)')) document.body.classList.remove('modal-open');
     }
 
     function slugify(str) {
@@ -3128,6 +3429,18 @@
     maybeAutoPromote();
     navigate(state.page || 'home');
     if (state.user.loggedIn && !state.user.onboarded) openOnboardingModal();
+    if ('IntersectionObserver' in window) {
+      const adviceObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          const list = entry.target.querySelector('.advice-list');
+          if (list && !list.classList.contains('advice-reveal-run')) list.classList.add('advice-reveal-run');
+        });
+      }, { threshold: 0.25 });
+      const adviceBox = document.querySelector('.advice-box');
+      if (adviceBox) adviceObserver.observe(adviceBox);
+    }
+    checkStudyReminders(false);
 
     window.addEventListener('load', onGisLoaded); // chờ thư viện Google tải xong rồi mới vẽ nút
 
@@ -3162,6 +3475,10 @@
     ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.style.borderColor = ''; }));
     dz.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) processTimetableFile(f); });
     dz.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById('tkbInput').click(); } });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') checkStudyReminders(false);
+    });
 
     // Đồng bộ giữa nhiều tab (không ghi lại để tránh vòng lặp)
     window.addEventListener('storage', e => {
@@ -3254,6 +3571,7 @@
 
   async function reconcile(user) {
     ready = false;
+    if (!state.settings.cloudSync) { ready = true; return; }
     try {
       const snap = await db.collection('users').doc(user.uid).get();
       const hasCloud = snap.exists && !!snap.data().stateJson;
@@ -3285,6 +3603,7 @@
 
   // app gọi sau mỗi lần saveState()
   window.stCloudTouch = function () {
+    if (!state.settings.cloudSync) return;
     localStorage.setItem(EDIT_KEY, String(Date.now()));
     const u = auth.currentUser;
     if (!u || !ready) return;
@@ -3315,7 +3634,7 @@
 
   document.addEventListener('visibilitychange', () => {
     const u = auth.currentUser;
-    if (document.visibilityState === 'hidden' && pushTimer && u && ready) { clearTimeout(pushTimer); pushTimer = null; push(u); }
+    if (document.visibilityState === 'hidden' && pushTimer && u && ready && state.settings.cloudSync) { clearTimeout(pushTimer); pushTimer = null; push(u); }
   });
 })();
 </script>
