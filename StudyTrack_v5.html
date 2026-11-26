@@ -1,0 +1,3910 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>StudyTrack</title>
+  <meta name="theme-color" content="#91A486" />
+  <link rel="icon" type="image/png" href="assets/studytrack-icon.png" />
+  <link rel="apple-touch-icon" href="assets/studytrack-icon.png" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    /* Emoji/font fallback and notification controls */
+    body, button, input, select, textarea {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+                   Arial, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+    }
+    /* Theme Variables (Default = Theme 1: #FFDBBB, #CCBEB1, #997E67, #664930) */
+    :root {
+      --bg: #FAF5F0;
+      --card: #FFFFFF;
+      --surface-soft: #FFDBBB;
+      --surface-muted: #F2E8DF;
+      --border: #CCBEB1;
+      --primary: #664930;
+      --primary-hover: #523924;
+      --accent: #997E67;
+      --sidebar-bg: #664930;
+      --sidebar-text: #FFDBBB;
+      --sidebar-active-bg: #FFDBBB;
+      --sidebar-active-text: #664930;
+      --text: #362415;
+      --muted: #7D6450;
+
+      --success: #15803d;
+      --success-bg: #dcfce7;
+      --warning: #b45309;
+      --warning-bg: #fef3c7;
+      --danger: #b91c1c;
+      --danger-bg: #fee2e2;
+
+      --radius: 16px;
+      --shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+      --sidebar-w: 256px;
+    }
+
+    /* Theme 2: #C1C0C2, #F5E9E7, #837D68, #8A9DB1, #ECC5C6 */
+    [data-theme="theme2"] {
+      --bg: #F5E9E7;
+      --card: #FFFFFF;
+      --surface-soft: #ECC5C6;
+      --surface-muted: #EDE4E3;
+      --border: #C1C0C2;
+      --primary: #8A9DB1;
+      --primary-hover: #71859B;
+      --accent: #837D68;
+      --sidebar-bg: #837D68;
+      --sidebar-text: #F5E9E7;
+      --sidebar-active-bg: #ECC5C6;
+      --sidebar-active-text: #3A362C;
+      --text: #2F2C28;
+      --muted: #6E6A5C;
+    }
+
+    /* Theme 3: #7B9669, #E6E6E6, #6C8480, #BAC8B1, #404E3B */
+    [data-theme="theme3"] {
+      --bg: #E6E6E6;
+      --card: #FFFFFF;
+      --surface-soft: #BAC8B1;
+      --surface-muted: #DCE4D8;
+      --border: #BAC8B1;
+      --primary: #7B9669;
+      --primary-hover: #647C54;
+      --accent: #6C8480;
+      --sidebar-bg: #404E3B;
+      --sidebar-text: #E6E6E6;
+      --sidebar-active-bg: #BAC8B1;
+      --sidebar-active-text: #283324;
+      --text: #263022;
+      --muted: #566862;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+                   "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+
+    /* Left Sidebar */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--sidebar-bg);
+      color: var(--sidebar-text);
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 14px;
+      transition: transform 0.25s ease, background 0.25s ease;
+      box-shadow: 4px 0 20px rgba(0,0,0,0.08);
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.16);
+      margin-bottom: 16px;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
+      background: var(--sidebar-active-bg);
+      color: var(--sidebar-active-text);
+      display: grid;
+      place-items: center;
+      font-size: 1.2rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .brand-text h2 {
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    .brand-text span {
+      font-size: 0.74rem;
+      opacity: 0.82;
+    }
+
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .nav-item {
+      border: none;
+      background: transparent;
+      color: var(--sidebar-text);
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 0.94rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      text-align: left;
+      transition: all 0.18s ease;
+      opacity: 0.9;
+    }
+
+    .nav-item:hover {
+      background: rgba(255,255,255,0.12);
+      opacity: 1;
+    }
+
+    .nav-item.active {
+      background: var(--sidebar-active-bg);
+      color: var(--sidebar-active-text);
+      opacity: 1;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+
+    .sidebar-footer .year-switcher-mini { display:none; }
+    .sidebar-footer {
+      padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,0.15);
+      font-size: 0.78rem;
+      opacity: 0.85;
+    }
+
+    .year-switcher-mini {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      margin-top: 8px;
+    }
+
+    .year-mini-btn {
+      border: 1px solid rgba(255,255,255,0.28);
+      background: transparent;
+      color: var(--sidebar-text);
+      padding: 6px 4px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .year-mini-btn.active {
+      background: var(--sidebar-active-bg);
+      color: var(--sidebar-active-text);
+      border-color: var(--sidebar-active-bg);
+    }
+
+    /* Main Content Wrapper */
+    .main-wrap {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 90px;
+    }
+
+    /* Top Header inside Main */
+    .top-header {
+      position: sticky;
+      top: 0;
+      z-index: 300;
+      background: rgba(255,255,255,0.78);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .menu-toggle {
+      display: none;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    .page-title-bar {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .user-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      padding: 5px 14px 5px 6px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      color: var(--text);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .user-pill-btn:hover {
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 0.88rem;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .user-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .user-pill-meta {
+      text-align: left;
+      line-height: 1.2;
+    }
+
+    .user-pill-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: block;
+    }
+
+    .user-pill-class {
+      font-size: 0.74rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .content-area {
+      padding: 22px 24px;
+      max-width: 1220px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Welcome Hero Banner (Home) */
+    .welcome-hero {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      color: #fff;
+      border-radius: 24px;
+      padding: 28px 30px;
+      margin-bottom: 22px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .welcome-hero h1 {
+      font-size: 1.7rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .welcome-hero p {
+      margin-top: 6px;
+      font-size: 0.94rem;
+      opacity: 0.92;
+    }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .hero-badge {
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(6px);
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    /* Generic Card */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+
+    .card-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 1.08rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+    }
+
+    /* 3 Alert Tier Cards on Home */
+    .tiers-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .tier-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px;
+      border: 1.5px solid var(--border);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tier-card.danger { border-top: 5px solid #dc2626; }
+    .tier-card.warn { border-top: 5px solid #d97706; }
+    .tier-card.good { border-top: 5px solid #16a34a; }
+
+    .tier-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tier-title {
+      font-weight: 800;
+      font-size: 0.96rem;
+    }
+
+    .tier-rule {
+      font-size: 0.76rem;
+      color: var(--muted);
+      font-weight: 600;
+      background: var(--surface-muted);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .tier-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tier-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 11px;
+      background: var(--bg);
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .tier-empty {
+      font-size: 0.84rem;
+      color: var(--muted);
+      font-style: italic;
+      padding: 8px 0;
+    }
+
+    /* Fluctuation Bars */
+    .fluc-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+    }
+
+    .fluc-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    .fluc-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .fluc-name {
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+
+    .fluc-pct {
+      font-weight: 800;
+      font-size: 0.86rem;
+    }
+
+    .fluc-track {
+      width: 100%;
+      height: 11px;
+      background: rgba(0,0,0,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .fluc-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.4s ease, background 0.3s ease;
+    }
+
+    .fluc-meta {
+      margin-top: 6px;
+      font-size: 0.76rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    /* Rank & Target Box */
+    .rank-summary-box {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .rank-status-card {
+      background: var(--surface-muted);
+      border-radius: 14px;
+      padding: 18px;
+      border: 1px solid var(--border);
+    }
+
+    .rank-big {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin: 6px 0;
+    }
+
+    .advice-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 18px;
+    }
+
+    .advice-list {
+      margin-top: 8px;
+      padding-left: 18px;
+      font-size: 0.88rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .subjects-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+      gap: 10px;
+    }
+
+    .sub-mini-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    /* Buttons & Inputs */
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 9px 15px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: all 0.16s ease;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--primary-hover); }
+
+    .btn-soft {
+      background: var(--surface-soft);
+      color: var(--text);
+    }
+    .btn-soft:hover { filter: brightness(0.95); }
+
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+
+    .btn-danger {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .btn-sm { padding: 6px 10px; font-size: 0.78rem; border-radius: 8px; }
+
+    .google-btn {
+      background: #fff;
+      color: #1f2937;
+      border: 1px solid #d1d5db;
+      padding: 9px 16px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.86rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .google-btn:hover { background: #f9fafb; }
+
+    /* Pills */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 0.82rem;
+    }
+    .pill-high { background: var(--success-bg); color: var(--success); }
+    .pill-mid { background: var(--surface-soft); color: var(--text); }
+    .pill-warn { background: var(--warning-bg); color: var(--warning); }
+    .pill-low { background: var(--danger-bg); color: var(--danger); }
+    .pill-empty { background: var(--surface-muted); color: var(--muted); }
+
+    /* Segmented */
+    .segmented {
+      display: inline-flex;
+      background: var(--surface-muted);
+      padding: 4px;
+      border-radius: 11px;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .seg-btn {
+      border: none;
+      background: transparent;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .seg-btn.active {
+      background: var(--card);
+      color: var(--primary);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+      font-size: 0.88rem;
+    }
+
+    th {
+      background: var(--surface-muted);
+      color: var(--text);
+      font-weight: 700;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      padding: 11px 8px;
+      border-bottom: 1.5px solid var(--border);
+      text-align: center;
+    }
+
+    th.left, td.left { text-align: left; padding-left: 14px; }
+
+    td {
+      padding: 9px 7px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    .score-input {
+      width: 58px;
+      text-align: center;
+      padding: 6px 4px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      background: var(--card);
+      color: var(--text);
+    }
+    .score-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(102, 73, 48, 0.14);
+    }
+    .score-input.gk { background: #fffbeb; border-color: #f59e0b; color: #78350f; }
+    .score-input.ck { background: #fef2f2; border-color: #ef4444; color: #7f1d1d; }
+    .score-input.invalid { border-color: #dc2626; background: #fee2e2; }
+
+    /* Charts */
+    .bar-chart-box { position: relative; height: 330px; width: 100%; }
+    .subjects-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .sub-chart-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 14px;
+    }
+    .mini-chart-box { position: relative; height: 185px; width: 100%; margin-top: 8px; }
+
+    .chart-annotation {
+      display: flex;
+      gap: 10px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      margin-bottom: 14px;
+    }
+    .chart-annotation.warning { background: var(--warning-bg); color: var(--warning); }
+    .chart-annotation.success { background: var(--success-bg); color: var(--success); }
+    .chart-annotation.info { background: var(--surface-muted); color: var(--muted); }
+
+    /* Timetable Upload */
+    .dropzone {
+      border: 2.5px dashed var(--border);
+      border-radius: 18px;
+      padding: 46px 20px;
+      text-align: center;
+      background: var(--bg);
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .dropzone:hover { border-color: var(--primary); background: var(--surface-muted); }
+
+    .tkb-preview {
+      max-width: 100%;
+      max-height: 640px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* Form Controls */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .input, select {
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      color: var(--text);
+      background: var(--card);
+      font-family: inherit;
+    }
+    .input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    /* Theme Swatches in Settings */
+    .theme-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .theme-card {
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      cursor: pointer;
+      background: var(--bg);
+      transition: 0.18s;
+    }
+    .theme-card.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
+    }
+
+    .swatches {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .swatch {
+      height: 26px;
+      flex: 1;
+      border-radius: 6px;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    /* Checkbox grid for subjects */
+    .check-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .check-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Floating + Button */
+    .fab-add {
+      position: fixed;
+      right: 26px;
+      bottom: 26px;
+      z-index: 800;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      font-size: 2rem;
+      font-weight: 400;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.24);
+      display: grid;
+      place-items: center;
+      transition: transform 0.18s ease, background 0.18s ease;
+    }
+    .fab-add:hover {
+      transform: scale(1.08);
+      background: var(--primary-hover);
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(3px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal {
+      background: var(--card);
+      color: var(--text);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+      border: 1px solid var(--border);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-title { font-size: 1.18rem; font-weight: 800; }
+
+    .close-btn {
+      border: none;
+      background: var(--surface-muted);
+      color: var(--text);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+
+    .hidden { display: none !important; }
+
+
+    /* Settings: compact shortcut layout */
+    .profile-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}.profile-info{display:flex;flex-direction:column;align-items:flex-start}.profile-info h1,.profile-info p{margin-bottom:3px}
+    .settings-shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}
+    .settings-shortcut{min-width:0;text-align:left;display:flex;flex-direction:column;gap:5px;padding:13px 14px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--text);cursor:pointer;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+    .settings-shortcut:hover{transform:translateY(-2px);border-color:var(--primary);box-shadow:0 8px 20px rgba(0,0,0,.07)}
+    .settings-shortcut span{font-size:1.25rem}
+    .settings-shortcut strong{font-size:.9rem;line-height:1.3}
+    .settings-shortcut small{font-size:.75rem;color:var(--muted);line-height:1.35}
+    .settings-footer-actions{display:flex;justify-content:flex-end;margin-top:8px}
+    .modal-close{border:0;background:var(--surface-muted);color:var(--text);width:32px;height:32px;border-radius:50%;font-size:1rem;cursor:pointer}
+    .modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:14px;border-top:1px solid var(--border)}
+    .settings-modal-note{font-size:.82rem;color:var(--muted);margin:0 0 12px;line-height:1.5}
+    @media(max-width:760px){.settings-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}.settings-shortcut{padding:11px}}
+    @media(max-width:420px){.settings-shortcuts{gap:7px}.settings-shortcut small{font-size:.7rem}}
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .tiers-grid { grid-template-columns: 1fr; }
+      .rank-summary-box { grid-template-columns: 1fr; }
+      .subjects-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 820px) {
+      .sidebar { transform: translateX(-100%); width: min(86vw, 286px); padding-top:max(14px, env(safe-area-inset-top)); padding-bottom:max(14px, env(safe-area-inset-bottom)); }
+      .sidebar.open { transform: translateX(0); }
+      .main-wrap { margin-left: 0; }
+      .menu-toggle { display: inline-grid; place-items: center; }
+      .subjects-grid { grid-template-columns: 1fr; }
+      .content-area { padding: 16px; }
+      .top-header { padding:10px 12px; }
+      .page-title-bar { max-width:42vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .user-pill-btn { padding-right:8px; }
+      .user-pill-meta { max-width:120px; }
+      .user-pill-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .welcome-hero { padding:20px; border-radius:18px; }
+      .welcome-hero h1 { font-size:1.35rem; }
+      .welcome-hero p { font-size:.88rem; }
+      .card-header { align-items:flex-start; }
+      .segmented { max-width:100%; }
+      .seg-btn { min-height:38px; }
+      .table-wrap { overscroll-behavior-inline:contain; }
+      .input, select, .score-input { font-size:16px; }
+      .modal-backdrop { align-items:flex-end; padding:0; }
+      .modal { max-height:calc(100dvh - 12px); max-height:min(92dvh, calc(100dvh - env(safe-area-inset-top) - 12px)); border-radius:20px 20px 0 0; padding:18px 16px calc(18px + env(safe-area-inset-bottom)); }
+      .modal-footer { position:sticky; bottom:0; background:var(--card); padding-bottom:max(4px, env(safe-area-inset-bottom)); }
+      .fab-add { width:56px;height:56px;right:max(16px, env(safe-area-inset-right));bottom:max(16px, env(safe-area-inset-bottom)); }
+      #toastBox { bottom:max(18px, env(safe-area-inset-bottom)); width:calc(100% - 32px); }
+      .toast { max-width:100%; text-align:center; }
+      .calendar-grid { gap:3px; }
+      .subjects-mini-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    }
+
+    .sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 450;
+    }
+
+    #toastBox{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2000;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+    .toast{background:var(--primary);color:#fff;padding:10px 16px;border-radius:12px;font-size:.88rem;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw}
+    .toast.error{background:var(--danger)}
+    body.modal-open{overflow:hidden}
+    button:focus-visible,a:focus-visible,.dropzone:focus-visible,.nav-item:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+    .nav-item:focus-visible{outline-color:var(--sidebar-text)}
+    th.left:first-child,td.left:first-child{position:sticky;left:0;background:var(--card);z-index:1}
+    th.left:first-child{background:var(--surface-muted)}
+
+    /* StudyTrack UX polish */
+    :root { --glass: linear-gradient(135deg, rgba(255,255,255,.82), rgba(255,255,255,.48)); }
+    .card,.tier-card,.fluc-item,.rank-status-card,.advice-box,.sub-mini-card,.sub-chart-card,.theme-card {
+      background-image: var(--glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s ease, border-color .22s ease;
+    }
+    .card:hover,.tier-card:hover,.fluc-item:hover,.rank-status-card:hover,.advice-box:hover,.sub-mini-card:hover,.sub-chart-card:hover,.theme-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(40,30,20,.11);
+    }
+    button,.btn,.nav-item,.seg-btn,.fab-add,.google-btn,.year-mini-btn { transition: transform .2s ease, box-shadow .2s ease, background .2s ease, filter .2s ease; }
+    button:hover,.btn:hover,.nav-item:hover,.seg-btn:hover,.google-btn:hover,.year-mini-btn:hover { transform: scale(1.10); z-index:2; }
+    .fab-add:hover { transform: scale(1.10); }
+    .welcome-hero { background: linear-gradient(125deg,var(--primary),var(--accent),var(--primary)); background-size:180% 180%; animation: heroFlow 9s ease infinite; }
+    @keyframes heroFlow { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+    .page-enter { animation: pageIn .32s ease both; }
+    @keyframes pageIn { from{opacity:0;transform:translateY(9px)} to{opacity:1;transform:translateY(0)} }
+    .subjects-grid { grid-template-columns:1fr !important; }
+    .subject-chart-toggle { width:100%; display:flex; justify-content:space-between; align-items:center; padding:13px 15px; border:1px solid var(--border); border-radius:12px; background:var(--glass); color:var(--text); font-weight:750; cursor:pointer; text-align:left; }
+    .subject-chart-panel { margin:8px 0 12px; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--glass); height:220px; }
+    .calendar-shell { border:1px solid var(--border); border-radius:16px; padding:16px; background:var(--glass); margin-bottom:18px; }
+    .calendar-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+    .calendar-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; }
+    .calendar-cell { min-height:62px; padding:7px; border-radius:9px; background:var(--bg); border:1px solid var(--border); font-size:.8rem; }
+    .calendar-cell.today { outline:2px solid var(--primary); }
+    .calendar-cell.has-exam { background:var(--surface-soft); }
+    .calendar-cell.muted { opacity:.35; }
+    .calendar-dot { display:block; width:6px;height:6px;border-radius:50%;background:var(--primary);margin-top:5px; }
+    .settings-details { border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:16px; background:var(--glass); }
+    .settings-details summary { cursor:pointer; font-weight:800; list-style:none; display:flex; justify-content:space-between; }
+    .settings-details summary::-webkit-details-marker { display:none; }
+    .sync-toggle-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .sync-switch { position:relative; display:inline-flex; width:48px; height:28px; flex-shrink:0; }
+    .sync-switch input { position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; z-index:2; }
+    .sync-switch .track { position:absolute; inset:0; border-radius:999px; background:var(--border); transition:.2s; }
+    .sync-switch .track::after { content:''; position:absolute; width:20px;height:20px;left:4px;top:4px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.2);transition:.2s; }
+    .sync-switch input:checked + .track { background:var(--primary); }
+    .sync-switch input:checked + .track::after { transform:translateX(20px); }
+    .profile-hero { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+    .profile-meta { display:flex; align-items:center; gap:14px; }
+    .profile-large-avatar { width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.22);font-size:1.5rem;font-weight:800;overflow:hidden; }
+    .profile-large-avatar img {width:100%;height:100%;object-fit:cover}
+    @media(max-width:600px) {
+      .calendar-cell {min-height:48px;padding:5px;font-size:.72rem}
+      .calendar-shell {padding:10px}
+      .card {padding:15px}
+      .subjects-mini-grid { grid-template-columns:1fr; }
+      .fluc-list { grid-template-columns:1fr; }
+      .bar-chart-box { height:280px; }
+      .mini-chart-box { height:210px; }
+      .theme-options { grid-template-columns:1fr; }
+      .form-grid { grid-template-columns:1fr; }
+      .form-grid .field { grid-column:1 / -1 !important; }
+      .card-hover, .card:hover, .tier-card:hover, .fluc-item:hover, .rank-status-card:hover, .advice-box:hover, .sub-mini-card:hover, .sub-chart-card:hover, .theme-card:hover { transform:none; }
+      button:hover, .btn:hover, .nav-item:hover, .seg-btn:hover, .google-btn:hover, .year-mini-btn:hover { transform:none; }
+      .btn, .google-btn, .seg-btn, .year-mini-btn { min-height:42px; }
+      .top-header .user-pill-class { display:none; }
+      .user-pill-meta { max-width:86px; }
+      .welcome-hero { align-items:flex-start; }
+      .hero-badges { gap:6px; }
+      .hero-badge { max-width:100%; }
+      .rank-summary-box { grid-template-columns:1fr; }
+    }
+    @media(prefers-reduced-motion:reduce) { *,*::before,*::after {animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important} }
+
+  
+    @property --st-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+    @keyframes stBorderSpin { to { --st-angle: 360deg; } }
+    .advice-box.advice-glow {
+      border: 2px solid transparent;
+      background: linear-gradient(var(--bg), var(--bg)) padding-box,
+                  conic-gradient(from var(--st-angle), #f43f5e, #f59e0b, #22c55e, #06b6d4, #8b5cf6, #f43f5e) border-box;
+      animation: stBorderSpin 4s linear infinite;
+      box-shadow: 0 0 18px rgba(139,92,246,.18);
+    }
+    .advice-box.advice-glow:hover { border-color: transparent; }
+    .advice-glow .advice-list { padding-left: 0; list-style: none; gap: 8px; }
+    .adv-note { font-size: .84rem; color: var(--muted); }
+    .adv-line { font-size: .88rem; line-height: 1.55; }
+    .adv-row { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 9px 12px; }
+    .adv-row.ok { opacity: .72; }
+    .adv-top { display: flex; align-items: center; gap: 8px; }
+    .adv-name { font-weight: 700; flex: 1; }
+    .adv-tag { font-size: .72rem; color: var(--muted); }
+    .adv-hint { font-size: .82rem; margin-top: 4px; }
+    .advice-list .ai-reveal {
+      opacity:1;
+      transform:none;
+    }
+    .advice-list.advice-reveal-run .ai-reveal {
+      opacity: 0;
+      transform: translateY(7px);
+      animation: aiAdviceReveal .48s cubic-bezier(.2,.75,.25,1) forwards;
+    }
+    .advice-list .ai-reveal strong {
+      background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary));
+      background-size: 200% 100%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: aiTextShimmer 2.4s ease-in-out infinite;
+    }
+    .advice-icon {
+      display:inline-grid;
+      place-items:center;
+      width:1.35em;
+      height:1.35em;
+      margin-right:5px;
+      border-radius:50%;
+      vertical-align:-0.18em;
+      font-size:.78em;
+      font-weight:900;
+      line-height:1;
+      background:var(--surface-muted);
+      color:var(--text);
+      -webkit-text-fill-color:currentColor;
+    }
+    .advice-icon.info { background:#dbeafe; color:#1d4ed8; }
+    .advice-icon.pull { background:#fee2e2; color:#b91c1c; clip-path:polygon(50% 10%,90% 85%,10% 85%); border-radius:3px; width:1.25em;height:1.25em;font-size:.82em; }
+    .advice-icon.done { background:#dcfce7; color:#15803d; }
+    .advice-icon.priority { background:#fef3c7; color:#9a6700; }
+    .advice-icon.warning { background:#ffedd5; color:#c2410c; border-radius:4px; }
+    .advice-title-icon {
+      display:inline-grid;
+      place-items:center;
+      width:20px;
+      height:20px;
+      margin-right:6px;
+      border-radius:50%;
+      background:linear-gradient(135deg,#fff7cc,#fde68a);
+      color:#a16207;
+      font-size:12px;
+      line-height:1;
+      vertical-align:-2px;
+      box-shadow:0 0 0 3px rgba(250,204,21,.12);
+    }
+    @keyframes aiAdviceReveal {
+      to { opacity:1; transform:translateY(0); }
+    }
+    @keyframes aiTextShimmer {
+      0%,100% { background-position:0% 50%; }
+      50% { background-position:100% 50%; }
+    }
+    @media (prefers-reduced-motion: reduce) { .advice-box.advice-glow { animation: none; } }
+      @media (prefers-reduced-motion: reduce) { .advice-list .ai-reveal strong { animation: none; } .advice-list.advice-reveal-run .ai-reveal { animation: none; opacity: 1; transform: none; } }
+
+    /* StudyTrack brand logo */
+    .brand-logo {
+      width: 56px;
+      height: 56px;
+      flex: 0 0 56px;
+      display: block;
+      object-fit: cover;
+      border-radius: 50%;
+      background: #91A486;
+      border: 1px solid rgba(255,255,255,.82);
+      box-shadow: 0 3px 10px rgba(0,0,0,.14);
+    }
+    .sidebar-brand .brand-text h2 { letter-spacing: .01em; }
+
+    /* ===== v3: sửa giao diện điện thoại + trạng thái tải dữ liệu đám mây ===== */
+    html { -webkit-text-size-adjust: 100%; }
+    @media (max-width: 820px) {
+      .top-header { padding-top: calc(10px + env(safe-area-inset-top, 0px)); padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); gap: 8px; }
+      .top-left { min-width: 0; flex: 1 1 auto; gap: 8px; }
+      .menu-toggle { flex-shrink: 0; }
+      .page-title-bar { max-width: none; min-width: 0; flex: 1 1 auto; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .user-pill-btn { flex-shrink: 0; max-width: 46vw; gap: 8px; }
+      .user-pill-meta { max-width: 96px; min-width: 0; }
+    }
+    .profile-large-avatar { flex-shrink: 0; aspect-ratio: 1 / 1; }
+    .profile-meta, .profile-info { min-width: 0; }
+    .profile-info h1, .profile-info p { overflow-wrap: anywhere; }
+    input[type="date"].input { display: block; width: 100%; min-width: 0; min-height: 44px; -webkit-appearance: none; appearance: none; }
+    .modal { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+    /* Màn hình cảm ứng: :hover bị "dính" sau khi chạm nên không phóng to nút/thẻ */
+    @media (hover: none) {
+      button:hover, .btn:hover, .nav-item:hover, .seg-btn:hover, .google-btn:hover, .year-mini-btn:hover, .fab-add:hover, .user-pill-btn:hover,
+      .card:hover, .tier-card:hover, .fluc-item:hover, .rank-status-card:hover, .advice-box:hover, .sub-mini-card:hover, .sub-chart-card:hover, .theme-card:hover, .settings-shortcut:hover { transform: none; box-shadow: none; }
+    }
+    @media (max-width: 600px) {
+      .check-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .check-chip { padding: 9px 10px; font-size: .84rem; align-items: flex-start; }
+      .modal-title { font-size: 1.05rem; }
+      .ob-submit { flex: 1; min-height: 46px; }
+    }
+    @media (max-width: 820px) { /* thanh nút dính đáy hộp thoại: phủ kín cả phần đệm đáy, không để nội dung lọt xuống bên dưới */
+      .modal-footer { bottom: calc(-18px - env(safe-area-inset-bottom, 0px)); padding-bottom: calc(14px + 18px + env(safe-area-inset-bottom, 0px)); margin-bottom: 0; z-index: 3; }
+    }
+    .hero-feed { margin-top: 8px; font-size: .94rem; line-height: 1.5; }
+    .hero-feed:empty { display: none; }
+    .hero-feed div { margin-top: 4px; }
+    .cloud-loading { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 66px); transform: translateX(-50%); z-index: 1500; display: flex; align-items: center; gap: 10px; background: var(--primary); color: #fff; padding: 9px 16px; border-radius: 999px; font-size: .84rem; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,.25); max-width: calc(100vw - 24px); }
+    .cloud-loading i { width: 14px; height: 14px; flex-shrink: 0; border: 2px solid rgba(255,255,255,.45); border-top-color: #fff; border-radius: 50%; animation: stSpin .8s linear infinite; }
+    @keyframes stSpin { to { transform: rotate(360deg); } }
+    body.is-cloud-loading .content-area, body.is-cloud-loading .fab-add { pointer-events: none; opacity: .55; }
+  </style>
+</head>
+<body>
+
+  <!-- Mobile Sidebar Overlay -->
+  <div id="sidebarOverlay" class="sidebar-overlay hidden" onclick="toggleSidebar(false)"></div>
+  <div id="cloudLoading" class="cloud-loading hidden" role="status" aria-live="polite"><i aria-hidden="true"></i><span>Đang tải dữ liệu của bạn từ đám mây…</span></div>
+
+  <!-- Left Navigation Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <img class="brand-logo" src="assets/studytrack-icon.png" alt="Logo StudyTrack" width="56" height="56" />
+      <div class="brand-text">
+        <h2>StudyTrack</h2>
+        <span>👑premium</span>
+      </div>
+    </div>
+
+    <nav class="nav-list">
+      <button class="nav-item active" data-page="home" onclick="navigate('home')">🏠 Home</button>
+      <button class="nav-item" data-page="grades" onclick="navigate('grades')">📋 Bảng điểm</button>
+      <button class="nav-item" data-page="charts" onclick="navigate('charts')">📊 Biểu đồ theo dõi</button>
+      <button class="nav-item" data-page="timetable" onclick="navigate('timetable')">🗓️ Thời khóa biểu</button>
+      <button class="nav-item" data-page="exams" onclick="navigate('exams')">📅 Lịch kiểm tra</button>
+      <button class="nav-item" data-page="settings" onclick="navigate('settings')">⚙️ Setting</button>
+    </nav>
+
+  </aside>
+
+  <!-- Main Workspace -->
+  <div class="main-wrap">
+    <header class="top-header">
+      <div class="top-left">
+        <button class="menu-toggle" aria-label="Mở menu" aria-expanded="false" aria-controls="sidebar" onclick="toggleSidebar(true)">☰</button>
+        <div class="page-title-bar" id="topPageTitle">Home</div>
+      </div>
+
+      <button class="user-pill-btn" id="topUserBtn" onclick="openUserAction()">
+        <div class="user-avatar" id="topUserAvatar">?</div>
+        <div class="user-pill-meta">
+          <span class="user-pill-name" id="topUserName">Đăng nhập Google</span>
+          <span class="user-pill-class" id="topUserClass">Chưa xác định lớp</span>
+        </div>
+      </button>
+    </header>
+
+    <main class="content-area">
+
+      <!-- ==================== PAGE: HOME ==================== -->
+      <section id="page-home">
+        <!-- Large Rounded Greeting Rectangle -->
+        <div class="welcome-hero">
+          <div>
+            <h1 id="heroGreeting">Xin chào người dùng!</h1>
+            <p id="heroSub">Đăng nhập bằng Google để đồng bộ tên, xác định lớp theo tuổi và thiết lập lộ trình học tập.</p>
+            <div class="hero-feed" id="heroScoreFeed" aria-live="polite"></div>
+            <div class="hero-badges" id="heroBadges"></div>
+          </div>
+          <div id="heroAuthAction">
+            <button class="google-btn" onclick="startGoogleLogin()">
+              <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+              Đăng nhập bằng Google
+            </button>
+          </div>
+        </div>
+
+        <!-- 3 Subject Alert Tiers -->
+        <div class="tiers-grid" id="homeTiersGrid"></div>
+
+        <!-- Score Fluctuation Amplitude Section -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📉 Mức Độ Ổn Định Của Điểm Thi</div>
+              <div style="font-size:0.8rem; color:var(--muted); margin-top:2px;">
+                <code></code> • Cảnh báo trên <strong id="flucThresholdLabel">30%</strong><div style="margin-top:3px">Mức độ ổn định của điểm thi cho thấy năng lực thực chất, thói quen học tập và khả năng làm bài bền vững của một học sinh qua các kỳ kiểm tra.</div>
+              </div>
+            </div>
+          </div>
+          <div class="fluc-list" id="homeFlucList"></div>
+        </div>
+
+        <!-- All Subjects Average + Classification & Goal Advisor -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🏆 Xếp Loại Danh Hiệu &amp; Gợi Ý Học Tập (<span id="homeYearLabel">Lớp 10</span>)</div>
+            <div class="segmented">
+              <button class="seg-btn" data-homemode="hk1" onclick="setHomeMode('hk1')">HK1</button>
+              <button class="seg-btn" data-homemode="hk2" onclick="setHomeMode('hk2')">HK2</button>
+              <button class="seg-btn" data-homemode="year" onclick="setHomeMode('year')">Cuối năm</button>
+            </div>
+          </div>
+
+          <div class="rank-summary-box">
+            <div class="rank-status-card">
+              <div style="font-size:0.8rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Xếp loại hiện tại</div>
+              <div class="rank-big" id="homeRankTitle">--</div>
+              <div style="font-size:0.85rem; color:var(--muted);" id="homeRankDesc">--</div>
+              <div style="margin-top:10px; font-size:0.84rem; font-weight:700;" id="homeGpaLine">ĐTB chung: --</div>
+              <div style="margin-top:6px; font-size:0.74rem; color:var(--muted);">Xếp loại theo Thông tư 22/2021, chưa xét kết quả rèn luyện.</div>
+            </div>
+            <div class="advice-box advice-glow">
+              <div style="font-weight:800; font-size:0.95rem;" id="adviceTitle">✨ Gợi ý học tập</div>
+              <ul class="advice-list" id="adviceList"></ul>
+            </div>
+          </div>
+
+          <div class="subjects-mini-grid" id="homeSubjectsGrid"></div>
+        </div>
+      </section>
+
+      <!-- ==================== PAGE: GRADEBOOK ==================== -->
+      <section id="page-grades" class="hidden">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📋 Bảng Điểm Chi Tiết — <span id="gradePageYear">Lớp 10</span></div>
+              <div style="font-size:0.82rem; color:var(--muted);">Hiển thị toàn bộ điểm Thường xuyên, Giữa kì (×2), Cuối kì (×3) và ĐTB Cả năm (HK2 gấp đôi HK1)</div>
+            </div>
+            <div class="segmented">
+              <button class="seg-btn" data-gview="hk1" onclick="setGradeView('hk1')">HK1</button>
+              <button class="seg-btn" data-gview="hk2" onclick="setGradeView('hk2')">HK2</button>
+              <button class="seg-btn" data-gview="year" onclick="setGradeView('year')">Cuối năm</button>
+            </div>
+          </div>
+
+          <div id="gradeTablesContainer"></div>
+
+          <div id="passFailSubjectsBox" style="margin-top:18px;"></div>
+        </div>
+      </section>
+
+      <!-- ==================== PAGE: CHARTS ==================== -->
+      <section id="page-charts" class="hidden">
+        <!-- 1. Bar Chart -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📊 Mục 1: Biểu Đồ Cột Điểm Trung Bình Các Môn</div>
+            <div class="segmented">
+              <button class="seg-btn active" data-barmode="year" onclick="setBarMode('year')">Cả năm</button>
+              <button class="seg-btn" data-barmode="hk1" onclick="setBarMode('hk1')">Học kì 1</button>
+              <button class="seg-btn" data-barmode="hk2" onclick="setBarMode('hk2')">Học kì 2</button>
+            </div>
+          </div>
+          <div id="barAnnotation" class="chart-annotation info"></div>
+          <div class="bar-chart-box">
+            <canvas id="barChartCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- 2. Line Charts per Subject -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📈 Mục 2: Biểu Đồ Đường Từng Môn Học</div>
+              <div style="font-size:0.82rem; color:var(--muted);">Theo dõi biến động từ TX1–4, Giữa kì, Cuối kì của cả HK1 và HK2</div>
+            </div>
+            <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; font-weight:700; cursor:pointer;">
+              <input type="checkbox" id="zoomToggle" onchange="renderChartsPage()" />
+              Thu phóng sát biên độ
+            </label>
+          </div>
+          <div class="subjects-grid" id="lineChartsGrid"></div>
+        </div>
+      </section>
+
+      <!-- ==================== PAGE: TIMETABLE ==================== -->
+      <section id="page-timetable" class="hidden">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🗓️ Thời Khóa Biểu (<span id="tkbYearLabel">Lớp 10</span>)</div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary btn-sm" onclick="document.getElementById('tkbInput').click()">📤 Nhập ảnh / File mới</button>
+              <button class="btn btn-danger btn-sm hidden" id="tkbDeleteBtn" onclick="deleteTimetable()">🗑️ Xóa TKB</button>
+            </div>
+          </div>
+
+          <input type="file" id="tkbInput" accept="image/*,.pdf" class="hidden" onchange="handleTimetableUpload(event)" />
+
+          <div id="tkbEmptyState" class="dropzone" role="button" tabindex="0" onclick="document.getElementById('tkbInput').click()">
+            <div style="font-size:2.6rem; margin-bottom:10px;">🖼️</div>
+            <h3 style="margin-bottom:6px;">Chưa có Thời khóa biểu</h3>
+            <p style="font-size:0.88rem; color:var(--muted); margin-bottom:16px;">
+              Nhấn vào đây để tải lên <strong>Hình ảnh (PNG, JPG)</strong> hoặc <strong>File PDF</strong> thời khóa biểu lớp của bạn.
+            </p>
+            <button type="button" class="btn btn-primary">📁 Chọn hình ảnh / File</button>
+          </div>
+
+          <div id="tkbDisplayBox" class="hidden"></div>
+        </div>
+      </section>
+
+      <!-- ==================== PAGE: EXAMS ==================== -->
+      <section id="page-exams" class="hidden">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📅 Lịch Kiểm Tra &amp; Tự Tính Lịch Ôn Tập</div>
+              <div style="font-size:0.82rem; color:var(--muted);">
+                Hệ thống tự lấy <strong>điểm gần nhất</strong> của môn trong bảng điểm để tính ngày bắt đầu ôn (1 tuần – 3 tuần trước ngày thi)
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+              <button id="examReminderBtn" class="btn btn-soft" onclick="enableExamNotifications()">🔔 Bật nhắc ôn</button>
+              <button class="btn btn-primary" onclick="openExamModal()">+ Thêm lịch kiểm tra</button>
+            </div>
+          </div>
+
+          <div id="examCalendar"></div><div class="table-wrap" id="examTableContainer"></div>
+        </div>
+      </section>
+
+      <!-- ==================== PAGE: SETTINGS ==================== -->
+      <section id="page-settings" class="hidden">
+        <div class="welcome-hero profile-hero">
+          <div class="profile-meta">
+            <div class="profile-large-avatar" id="settingsProfileAvatar">?</div>
+            <div class="profile-info">
+              <h1 id="settingsProfileTitle">Hello world!</h1>
+              <p id="settingsProfileSub">Đăng nhập để thiết lập hồ sơ cá nhân</p>
+              <div id="settingsProfileAction" class="profile-actions">
+                <button class="btn btn-soft" onclick="openSettingsModal('profileSettingsModal')">✏️ Chỉnh sửa</button>
+                <button class="google-btn" onclick="startGoogleLogin()">Đăng nhập Google</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-shortcuts">
+          <button class="settings-shortcut" onclick="openSettingsModal('learningSettingsModal')"><span>🎯</span><strong>Học tập</strong><small>Mục tiêu, khối thi, cảnh báo</small></button>
+          <button class="settings-shortcut" onclick="openSettingsModal('subjectsSettingsModal')"><span>📚</span><strong>Môn học</strong><small>Chọn môn đang học</small></button>
+          <button class="settings-shortcut" onclick="openSettingsModal('themeSettingsModal')"><span>🎨</span><strong>Giao diện</strong><small>Thay đổi bảng màu</small></button>
+          <button class="settings-shortcut" onclick="openSettingsModal('advancedSettingsModal')"><span>🗂️</span><strong>Năm học &amp; dữ liệu nâng cao</strong><small>Chuyển lớp, nhập và sao lưu dữ liệu</small></button>
+        </div>
+        <div class="settings-footer-actions">
+          <button id="logoutBtn" class="btn btn-outline hidden" onclick="logout()">🚪 Đăng xuất</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ==================== SETTINGS POPUPS ==================== -->
+  <div id="profileSettingsModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeSettingsModal('profileSettingsModal')">
+    <div class="modal">
+      <div class="modal-header"><div class="modal-title">👤 Chỉnh sửa hồ sơ</div><button class="modal-close" onclick="closeSettingsModal('profileSettingsModal')">✕</button></div>
+      <div class="form-grid">
+        <div class="field"><label for="set_name">Tên hiển thị</label><input class="input" id="set_name" type="text" placeholder="Tên của bạn"></div>
+        <div class="field"><label for="set_age">Ngày sinh (tuổi tự tăng theo năm, dùng để xếp Lớp 10 / 11 / 12)</label><input class="input" id="set_age" type="date"></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-outline" onclick="closeSettingsModal('profileSettingsModal')">Hủy</button><button class="btn btn-primary" onclick="saveSettingsForm()">Lưu hồ sơ</button></div>
+    </div>
+  </div>
+
+  <div id="learningSettingsModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeSettingsModal('learningSettingsModal')">
+    <div class="modal">
+      <div class="modal-header"><div class="modal-title">🎯 Cài đặt học tập</div><button class="modal-close" onclick="closeSettingsModal('learningSettingsModal')">✕</button></div>
+      <div class="form-grid">
+        <div class="field"><label for="set_examBlock">Khối hiện muốn thi</label><select id="set_examBlock"><option value="A00 (Toán - Lí - Hóa)">A00 (Toán - Lí - Hóa)</option><option value="A01 (Toán - Lí - Anh)">A01 (Toán - Lí - Anh)</option><option value="B00 (Toán - Hóa - Sinh)">B00 (Toán - Hóa - Sinh)</option><option value="C00 (Văn - Sử - Địa)">C00 (Văn - Sử - Địa)</option><option value="D01 (Toán - Văn - Anh)">D01 (Toán - Văn - Anh)</option><option value="D07 (Toán - Hóa - Anh)">D07 (Toán - Hóa - Anh)</option><option value="Khác / Đánh giá năng lực">Khác / Đánh giá năng lực</option></select></div>
+        <div class="field"><label for="set_targetTitle">Danh hiệu mục tiêu</label><select id="set_targetTitle"><option value="HSXX">Học sinh Xuất sắc (HSXS)</option><option value="HSG">Học sinh Giỏi (HSG)</option></select></div>
+        <div class="field"><label for="set_alertScore">Mức điểm báo động (ĐTB dưới mức này)</label><input class="input" id="set_alertScore" type="number" step="0.1" min="0" max="10"></div>
+        <div class="field"><label for="set_highScore">Mục tiêu điểm (ĐTB từ mức này trở lên)</label><input class="input" id="set_highScore" type="number" step="0.1" min="0" max="10"></div>
+        <div class="field"><label for="set_flucWarn">Ngưỡng cảnh báo dao động điểm (%)</label><input class="input" id="set_flucWarn" type="number" step="1" min="5" max="100"></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-outline" onclick="closeSettingsModal('learningSettingsModal')">Đóng</button><button class="btn btn-primary" onclick="saveSettingsForm()">Lưu thay đổi</button></div>
+    </div>
+  </div>
+
+  <div id="subjectsSettingsModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeSettingsModal('subjectsSettingsModal')">
+    <div class="modal">
+      <div class="modal-header"><div class="modal-title">📚 Môn học đang học</div><button class="modal-close" onclick="closeSettingsModal('subjectsSettingsModal')">✕</button></div>
+      <p class="settings-modal-note"><strong>Môn bắt buộc:</strong> Ngữ văn, Toán, Ngoại ngữ 1, Lịch sử (tính điểm) cùng các môn đánh giá Đạt/Chưa đạt.</p>
+      <label style="font-size:.84rem;font-weight:700">Môn học lựa chọn</label>
+      <div class="check-grid" id="settingsElectivesGrid"></div>
+      <p id="electiveCountNote" class="settings-modal-note"></p>
+      <div class="modal-footer"><button class="btn btn-outline" onclick="closeSettingsModal('subjectsSettingsModal')">Đóng</button><button class="btn btn-primary" onclick="saveSettingsSubjects()">Cập nhật môn học</button></div>
+    </div>
+  </div>
+
+  <div id="themeSettingsModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeSettingsModal('themeSettingsModal')">
+    <div class="modal">
+      <div class="modal-header"><div class="modal-title">🎨 Bảng màu giao diện</div><button class="modal-close" onclick="closeSettingsModal('themeSettingsModal')">✕</button></div>
+      <div class="theme-options" id="themeOptions">
+        <div class="theme-card" data-theme-id="default" onclick="setTheme('default')"><strong>Mặc định (Ấm áp)</strong><div class="swatches"><div class="swatch" style="background:#FFDBBB"></div><div class="swatch" style="background:#CCBEB1"></div><div class="swatch" style="background:#997E67"></div><div class="swatch" style="background:#664930"></div></div></div>
+        <div class="theme-card" data-theme-id="theme2" onclick="setTheme('theme2')"><strong>Pastel Vintage</strong><div class="swatches"><div class="swatch" style="background:#C1C0C2"></div><div class="swatch" style="background:#F5E9E7"></div><div class="swatch" style="background:#837D68"></div><div class="swatch" style="background:#8A9DB1"></div><div class="swatch" style="background:#ECC5C6"></div></div></div>
+        <div class="theme-card" data-theme-id="theme3" onclick="setTheme('theme3')"><strong>Xanh Rêu</strong><div class="swatches"><div class="swatch" style="background:#7B9669"></div><div class="swatch" style="background:#E6E6E6"></div><div class="swatch" style="background:#6C8480"></div><div class="swatch" style="background:#BAC8B1"></div><div class="swatch" style="background:#404E3B"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="advancedSettingsModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeSettingsModal('advancedSettingsModal')">
+    <div class="modal">
+      <div class="modal-header"><div class="modal-title">🗂️ Năm học &amp; dữ liệu nâng cao</div><button class="modal-close" onclick="closeSettingsModal('advancedSettingsModal')">✕</button></div>
+      <div class="card" style="margin-bottom:12px"><div class="card-title" style="margin-bottom:10px">Năm học đang xem</div><div class="segmented"><button class="seg-btn" data-yr="10" onclick="switchYear('10')">Lớp 10</button><button class="seg-btn" data-yr="11" onclick="switchYear('11')">Lớp 11</button><button class="seg-btn" data-yr="12" onclick="switchYear('12')">Lớp 12</button></div></div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="sync-toggle-row">
+          <div>
+            <div class="card-title" style="margin-bottom:4px">☁️ Đồng bộ đám mây</div>
+            <div class="settings-modal-note" style="margin:0">Giữ dữ liệu điểm, cài đặt và lịch thi giữa các thiết bị. Thời khóa biểu vẫn giữ trên máy này.</div>
+          </div>
+          <label class="sync-switch" title="Bật hoặc tắt đồng bộ đám mây">
+            <input id="cloudSyncToggle" type="checkbox" onchange="setCloudSync(this.checked)" />
+            <span class="track"></span>
+          </label>
+        </div>
+      </div>
+      <div class="card"><div class="card-title" style="margin-bottom:10px">💾 Dữ liệu &amp; sao lưu</div><div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn btn-soft" onclick="loadDemoData()">✨ Điền điểm mẫu</button><button class="btn btn-outline" onclick="exportJSON()">⬇️ Xuất JSON</button><button class="btn btn-outline" onclick="document.getElementById('importFile').click()">⬆️ Nhập JSON</button><input type="file" id="importFile" accept=".json" class="hidden" onchange="importJSON(event)"><button class="btn btn-danger" onclick="resetAllData()">🗑️ Đặt lại toàn bộ</button></div></div>
+    </div>
+  </div>
+
+  <!-- ALWAYS VISIBLE FLOATING + BUTTON (Bottom Right) -->
+  <button class="fab-add" aria-label="Thêm điểm nhanh" title="Thêm điểm nhanh" onclick="openQuickScoreModal()">+</button>
+
+  <!-- ==================== MODAL: QUICK ADD SCORE (+) ==================== -->
+  <div id="quickScoreModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeModal('quickScoreModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">➕ Thêm Điểm Thủ Công</div>
+        <button class="close-btn" aria-label="Đóng" onclick="closeModal('quickScoreModal')">✕</button>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="qs_year">Lớp</label>
+          <select id="qs_year" onchange="refreshQuickScoreSubjects()">
+            <option value="10">Lớp 10</option>
+            <option value="11">Lớp 11</option>
+            <option value="12">Lớp 12</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="qs_sem">Học kì</label>
+          <select id="qs_sem" onchange="updateQuickScoreHint()">
+            <option value="hk1">Học kì 1</option>
+            <option value="hk2">Học kì 2 (Hệ số 2)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="qs_subject">Môn học</label>
+          <select id="qs_subject" onchange="updateQuickScoreHint()"></select>
+        </div>
+        <div class="field">
+          <label for="qs_col">Cột điểm</label>
+          <select id="qs_col" onchange="updateQuickScoreHint()">
+            <option value="tx0">Thường xuyên 1 (×1)</option>
+            <option value="tx1">Thường xuyên 2 (×1)</option>
+            <option value="tx2">Thường xuyên 3 (×1)</option>
+            <option value="tx3">Thường xuyên 4 (×1)</option>
+            <option value="gk">Giữa kì (×2)</option>
+            <option value="ck">Cuối kì (×3)</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="qs_value">Điểm số (0 – 10) — để trống để xóa điểm đã có</label>
+          <input class="input" id="qs_value" type="text" inputmode="decimal" placeholder="VD: 8.5 hoặc 8,5" />
+          <p id="qs_hint" style="font-size:0.8rem; color:var(--muted); min-height:1.2em;"></p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+        <button class="btn btn-outline" onclick="closeModal('quickScoreModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="submitQuickScore()">Lưu điểm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: ADD EXAM SCHEDULE ==================== -->
+  <div id="examModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeModal('examModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">📅 Thêm Lịch Kiểm Tra Mới</div>
+        <button class="close-btn" aria-label="Đóng" onclick="closeModal('examModal')">✕</button>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="ex_subject">Môn kiểm tra</label>
+          <select id="ex_subject"></select>
+        </div>
+        <div class="field">
+          <label for="ex_type">Loại bài kiểm tra</label>
+          <select id="ex_type">
+            <option value="Thường xuyên">Thường xuyên (×1)</option>
+            <option value="Giữa kì">Giữa kì (×2)</option>
+            <option value="Cuối kì">Cuối kì (×3)</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="ex_title">Tên / Nội dung bài kiểm tra</label>
+          <input class="input" id="ex_title" type="text" placeholder="VD: Kiểm tra chương 2 - Hàm số bậc hai" />
+        </div>
+        <div class="field">
+          <label for="ex_date">Ngày kiểm tra</label>
+          <input class="input" id="ex_date" type="date" />
+        </div>
+        <div class="field">
+          <label for="ex_time">Giờ kiểm tra (tuỳ chọn)</label>
+          <input class="input" id="ex_time" type="time" />
+        </div>
+      </div>
+      <p style="font-size:0.8rem; color:var(--muted); margin-top:12px;">
+        💡 Hệ thống sẽ tự kiểm tra điểm gần nhất của môn này để đề xuất bắt đầu ôn tập trước <strong>1 tuần – 3 tuần</strong>.
+      </p>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+        <button class="btn btn-outline" onclick="closeModal('examModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="saveNewExam()">Thêm vào lịch</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: GOOGLE SIGN-IN & ONBOARDING ==================== -->
+  <div id="authModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeModal('authModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">🔐 Đăng nhập tài khoản Google</div>
+        <button class="close-btn" aria-label="Đóng" onclick="closeModal('authModal')">✕</button>
+      </div>
+      <div id="authStepLogin">
+        <p style="font-size:0.88rem; color:var(--muted); margin-bottom:14px;">
+          Bấm nút bên dưới và chọn tài khoản Google của bạn. Nếu tài khoản đã có dữ liệu trên đám mây, hồ sơ và bảng điểm sẽ được tải về tự động, không phải nhập lại.
+        </p>
+        <div id="authGoogleBtn" style="display:flex; justify-content:center; min-height:44px; margin-bottom:14px;"></div>
+        <details id="manualLogin">
+          <summary style="cursor:pointer; font-size:0.84rem; font-weight:700; margin-bottom:12px;">Không dùng Google? Nhập thông tin thủ công</summary>
+        <div class="form-grid">
+          <div class="field">
+            <label for="login_name">Họ và tên (Tài khoản Google)</label>
+            <input class="input" id="login_name" type="text" placeholder="VD: Nguyễn Minh Anh" />
+          </div>
+          <div class="field">
+            <label for="login_email">Email Google</label>
+            <input class="input" id="login_email" type="email" placeholder="minhanh@gmail.com" />
+          </div>
+          <div class="field" style="grid-column: 1 / -1;">
+            <label for="login_age">Ngày sinh của bạn (nếu để trống, bước sau sẽ hỏi lại)</label>
+            <input class="input" id="login_age" type="date" />
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+          <button class="btn btn-outline" onclick="closeModal('authModal')">Đóng</button>
+          <button class="btn btn-primary" onclick="completeLocalGoogleLogin()">Đăng nhập &amp; Thiết lập</button>
+        </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: POST-LOGIN ONBOARDING WIZARD ==================== -->
+  <div id="onboardingModal" class="modal-backdrop hidden">
+    <div class="modal" style="max-width:680px;">
+      <div class="modal-header">
+        <div class="modal-title">🎓 Thiết Lập Hồ Sơ Học Tập Của Bạn</div>
+        <button id="ob_closeBtn" class="close-btn hidden" aria-label="Đóng" onclick="closeModal('onboardingModal')">✕</button>
+      </div>
+
+      <div id="ob_ageBox" class="field" style="margin-bottom:14px;">
+        <label for="ob_age">Ngày sinh của bạn (dùng để xác định Lớp 10 / 11 / 12, tuổi sẽ tự tăng theo năm)</label>
+        <input class="input" id="ob_age" type="date" />
+      </div>
+
+      <div class="form-grid" style="margin-bottom:14px;">
+        <div class="field">
+          <label for="ob_block">Khối hiện muốn thi</label>
+          <select id="ob_block">
+            <option value="A00 (Toán - Lí - Hóa)">A00 (Toán - Lí - Hóa)</option>
+            <option value="A01 (Toán - Lí - Anh)">A01 (Toán - Lí - Anh)</option>
+            <option value="B00 (Toán - Hóa - Sinh)">B00 (Toán - Hóa - Sinh)</option>
+            <option value="C00 (Văn - Sử - Địa)">C00 (Văn - Sử - Địa)</option>
+            <option value="D01 (Toán - Văn - Anh)">D01 (Toán - Văn - Anh)</option>
+            <option value="D07 (Toán - Hóa - Anh)">D07 (Toán - Hóa - Anh)</option>
+            <option value="Khác / Đánh giá năng lực">Khác / Đánh giá năng lực</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="ob_title">Danh hiệu mục tiêu</label>
+          <select id="ob_title">
+            <option value="HSXX">Học sinh Xuất sắc (HSXS)</option>
+            <option value="HSG">Học sinh Giỏi (HSG)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <div style="font-size:0.84rem; font-weight:700; margin-bottom:4px;">Môn học &amp; nội dung giáo dục bắt buộc (Mặc định có):</div>
+        <div style="font-size:0.8rem; color:var(--muted); background:var(--bg); padding:9px 12px; border-radius:10px;">
+          • Tính điểm: <strong>Ngữ văn, Toán, Ngoại ngữ 1 (Tiếng Anh), Lịch sử</strong><br>
+          • Đánh giá Đạt/Chưa đạt: <strong>Giáo dục thể chất, GDQP-AN, HĐTN-HN, Nội dung giáo dục địa phương</strong>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <div style="font-size:0.84rem; font-weight:700; margin-bottom:4px;">Chọn các Môn học lựa chọn (theo tổ hợp trường bạn):</div>
+        <div class="check-grid" id="ob_electivesGrid"></div>
+      </div>
+
+      <div class="form-grid" style="margin-bottom:10px;">
+        <div class="field">
+          <label for="ob_alert">Mức điểm Báo động (&lt;)</label>
+          <input class="input" id="ob_alert" type="number" step="0.1" min="0" max="10" value="6.5" />
+        </div>
+        <div class="field">
+          <label for="ob_high">Mức điểm Cao (≥)</label>
+          <input class="input" id="ob_high" type="number" step="0.1" min="0" max="10" value="8.0" />
+        </div>
+        <div class="field">
+          <label for="ob_fluc">Cảnh báo dao động (%)</label>
+          <input class="input" id="ob_fluc" type="number" step="1" min="5" max="100" value="30" />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary ob-submit" onclick="finishOnboarding()">Hoàn tất &amp; Vào trang chủ</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'studytrack_thpt_v2';
+    const TKB_KEY = STORAGE_KEY + '_tkb';
+    let tkbSig = null;
+    const MODE_KEY = STORAGE_KEY + '_mode'; // 'cloud' = dữ liệu chỉ nằm trên đám mây
+    // Máy đang ở chế độ đám mây thì dữ liệu chưa có trên máy cho tới khi tải xong từ mây: phải chờ, không được hỏi lại hồ sơ
+    let cloudLoading = false; try { cloudLoading = localStorage.getItem(MODE_KEY) === 'cloud'; } catch {}
+    let loginBusy = false;
+
+    const MANDATORY_SCORED = ['Ngữ văn', 'Toán', 'Ngoại ngữ 1 (Tiếng Anh)', 'Lịch sử'];
+    const MANDATORY_PASSFAIL = [
+      'Giáo dục thể chất',
+      'Giáo dục quốc phòng và an ninh',
+      'Hoạt động trải nghiệm, hướng nghiệp',
+      'Nội dung giáo dục của địa phương'
+    ];
+    const ELECTIVE_POOL = [
+      'Địa lí',
+      'Giáo dục kinh tế và pháp luật',
+      'Vật lí',
+      'Hóa học',
+      'Sinh học',
+      'Công nghệ',
+      'Tin học',
+      'Âm nhạc',
+      'Mĩ thuật'
+    ];
+
+    const PAGES = ['home', 'grades', 'charts', 'timetable', 'exams', 'settings'];
+    const MAIN3 = ['Ngữ văn', 'Toán', 'Ngoại ngữ 1 (Tiếng Anh)'];
+    const isNum = v => typeof v === 'number' && !isNaN(v);
+    const validAge = a => Number.isInteger(a) && a >= 14 && a <= 20;
+    const localDateStr = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    function showToast(msg, type) {
+      let box = document.getElementById('toastBox');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'toastBox';
+        box.setAttribute('role', 'status');
+        box.setAttribute('aria-live', 'polite');
+        document.body.appendChild(box);
+      }
+      const t = document.createElement('div');
+      t.className = 'toast ' + (type || 'ok');
+      t.textContent = msg;
+      box.appendChild(t);
+      setTimeout(() => t.remove(), 3400);
+    }
+
+    function wrapLabel(str) {
+      const out = []; let cur = '';
+      String(str).split(' ').forEach(w => {
+        if (cur && (cur + ' ' + w).length > 14) { out.push(cur); cur = w; }
+        else cur = (cur + ' ' + w).trim();
+      });
+      if (cur) out.push(cur);
+      return out;
+    }
+
+    function getDefaultState() {
+      const defaultElectives = ['Vật lí', 'Hóa học', 'Sinh học', 'Địa lí', 'Tin học'];
+      return {
+        page: 'home',
+        activeYear: '10',
+        homeMode: 'hk1',
+        gradeView: 'hk1',
+        barMode: 'year',
+        theme: 'default',
+        user: {
+          loggedIn: false,
+          name: '',
+          email: '',
+          avatar: '',
+          age: null,
+          dob: null,
+          promotedYear: null,
+          onboarded: false
+        },
+        settings: {
+          examBlock: 'A00 (Toán - Lí - Hóa)',
+          targetTitle: 'HSXX',
+          alertScore: 6.5,
+          highScore: 8.0,
+          flucWarnPct: 30,
+          cloudSync: false,
+          examNotifications: false,
+          googleClientId: '',
+          electives: defaultElectives
+        },
+        grades: {
+          '10': {},
+          '11': {},
+          '12': {}
+        },
+        passFail: {
+          '10': {},
+          '11': {},
+          '12': {}
+        },
+        timetables: {
+          '10': null,
+          '11': null,
+          '12': null
+        },
+        exams: []
+      };
+    }
+
+    let state = loadState();
+    let barChart = null;
+    let lineCharts = [];
+
+    function normalizeState(p) {
+      const base = getDefaultState();
+      if (!p || typeof p !== 'object' || Array.isArray(p)) return base;
+      const s = { ...base, ...p }; delete s._homeModeTouched;
+      const obj = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+      s.user = { ...base.user, ...obj(p.user) };
+      s.settings = { ...base.settings, ...obj(p.settings) };
+      s.user.dob = validDob(s.user.dob) ? String(s.user.dob) : null;
+      const age = s.user.dob ? ageFromDob(s.user.dob) : Number(s.user.age); // tuổi tự tính lại mỗi lần mở app
+      s.user.age = s.user.dob ? age : (validAge(age) ? age : null);
+      s.user.promotedYear = Number.isInteger(s.user.promotedYear) ? s.user.promotedYear : null;
+      const num = (v, d, lo, hi) => { const n = Number(v); return (v !== null && v !== '' && isFinite(n) && n >= lo && n <= hi) ? n : d; };
+      s.settings.alertScore = num(s.settings.alertScore, 6.5, 0, 10);
+      s.settings.highScore = num(s.settings.highScore, 8, 0, 10);
+      if (s.settings.alertScore >= s.settings.highScore) { s.settings.alertScore = 6.5; s.settings.highScore = 8; }
+      s.settings.flucWarnPct = num(s.settings.flucWarnPct, 30, 5, 100);
+      s.settings.cloudSync = s.settings.cloudSync === true;
+      s.settings.examNotifications = s.settings.examNotifications === true;
+      s.settings.googleClientId = String(s.settings.googleClientId || '');
+      const el = Array.isArray(s.settings.electives) ? s.settings.electives.filter(x => ELECTIVE_POOL.includes(x)) : [];
+      s.settings.electives = el.length ? [...new Set(el)] : base.settings.electives;
+      s.activeYear = ['10', '11', '12'].includes(String(s.activeYear)) ? String(s.activeYear) : '10';
+      if (!PAGES.includes(s.page)) s.page = 'home';
+      if (!['year', 'hk1', 'hk2'].includes(s.homeMode)) s.homeMode = 'year';
+      if (!['year', 'hk1', 'hk2'].includes(s.gradeView)) s.gradeView = 'hk1';
+      if (!['year', 'hk1', 'hk2'].includes(s.barMode)) s.barMode = 'year';
+      if (!['default', 'theme2', 'theme3'].includes(s.theme)) s.theme = 'default';
+      const sc = v => { if (v === null || v === undefined || v === '') return null; const n = Number(v); return isFinite(n) && n >= 0 && n <= 10 ? Math.round(n * 100) / 100 : null; };
+      const sem = x => { const o = obj(x); const tx = Array.isArray(o.tx) ? o.tx : []; return { tx: [0, 1, 2, 3].map(i => sc(tx[i])), gk: sc(o.gk), ck: sc(o.ck) }; };
+      s.grades = {}; s.passFail = {}; s.timetables = {};
+      ['10', '11', '12'].forEach(y => {
+        s.grades[y] = {};
+        const g = obj(obj(p.grades)[y]);
+        Object.keys(g).forEach(n => { s.grades[y][n] = { hk1: sem(obj(g[n]).hk1), hk2: sem(obj(g[n]).hk2) }; });
+        const pf = obj(obj(p.passFail)[y]);
+        s.passFail[y] = {};
+        MANDATORY_PASSFAIL.forEach(m => { if (pf[m] === 'Đạt' || pf[m] === 'Chưa đạt') s.passFail[y][m] = pf[m]; });
+        const t = obj(p.timetables)[y];
+        s.timetables[y] = t && typeof t.dataUrl === 'string' ? t : null;
+      });
+      s.exams = (Array.isArray(p.exams) ? p.exams : [])
+        .filter(e => {
+          if (!e || !e.date || !e.subject) return false;
+          const d = parseExamDate(e.date);
+          return d && ['10', '11', '12'].includes(String(e.year));
+        })
+        .map((e, i) => ({
+          ...e,
+          year: String(e.year),
+          subject: String(e.subject),
+          type: String(e.type || 'Thường xuyên'),
+          title: String(e.title || '').trim(),
+          date: String(e.date),
+          time: /^([01]\d|2[0-3]):[0-5]\d$/.test(String(e.time || '')) ? String(e.time) : '',
+          id: (e.id !== null && e.id !== '' && e.id !== undefined && isFinite(Number(e.id))) ? Number(e.id) : Date.now() + i
+        }));
+      return s;
+    }
+
+    function loadState() {
+      let raw = null;
+      try {
+        raw = localStorage.getItem(STORAGE_KEY);
+        if (localStorage.getItem(MODE_KEY) === 'cloud') { // dữ liệu nằm trên đám mây, chỉ giữ thời khóa biểu ở máy
+          const st = getDefaultState();
+          st.settings.cloudSync = true;
+          try { const tk = localStorage.getItem(TKB_KEY); if (tk) st.timetables = JSON.parse(tk); } catch {}
+          return normalizeState(st);
+        }
+        if (!raw) return getDefaultState();
+        const obj = JSON.parse(raw);
+        const tk = localStorage.getItem(TKB_KEY);
+        if (tk && obj && typeof obj === 'object') { try { obj.timetables = JSON.parse(tk); } catch {} }
+        return normalizeState(obj);
+      } catch {
+        try { if (raw) localStorage.setItem(STORAGE_KEY + '_corrupt_backup', raw); } catch {}
+        return getDefaultState();
+      }
+    }
+
+    function saveState(silent) {
+      try {
+        const { timetables, ...rest } = state;
+        if (state.settings.cloudSync) { localStorage.setItem(MODE_KEY, 'cloud'); localStorage.removeItem(STORAGE_KEY); }
+        else { localStorage.removeItem(MODE_KEY); localStorage.setItem(STORAGE_KEY, JSON.stringify(rest)); }
+        const sig = ['10', '11', '12'].map(y => timetables && timetables[y] ? (timetables[y].name || '') + ':' + timetables[y].dataUrl.length : '').join('|');
+        if (sig !== tkbSig) { localStorage.setItem(TKB_KEY, JSON.stringify(timetables)); tkbSig = sig; }
+        try { window.stCloudTouch && window.stCloudTouch(); } catch {}
+        return true;
+      } catch {
+        if (!silent) showToast('Không lưu được dữ liệu (bộ nhớ trình duyệt đầy hoặc bị chặn).', 'error');
+        return false;
+      }
+    }
+
+    function getActiveSubjects() {
+      const el = state.settings.electives && state.settings.electives.length
+        ? state.settings.electives
+        : ['Vật lí', 'Hóa học', 'Sinh học', 'Địa lí', 'Tin học'];
+      return [...MANDATORY_SCORED, ...el];
+    }
+
+    function emptySubjectData() {
+      return {
+        hk1: { tx: [null, null, null, null], gk: null, ck: null },
+        hk2: { tx: [null, null, null, null], gk: null, ck: null }
+      };
+    }
+
+    function peekSubjectData(year, subName) {
+      return (state.grades[year] && state.grades[year][subName]) || emptySubjectData();
+    }
+
+    function ensureSubjectData(year, subName) {
+      if (!state.grades[year]) state.grades[year] = {};
+      if (!state.grades[year][subName]) state.grades[year][subName] = emptySubjectData();
+      return state.grades[year][subName];
+    }
+
+    function parseDob(v) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || ''));
+      if (!m) return null;
+      const d = new Date(+m[1], +m[2] - 1, +m[3]);
+      return d.getFullYear() === +m[1] && d.getMonth() === +m[2] - 1 && d.getDate() === +m[3] ? d : null;
+    }
+    function parseExamDate(v) {
+      return parseDob(v);
+    }
+    function ageFromDob(dob) {
+      const d = parseDob(dob);
+      if (!d) return null;
+      const n = new Date();
+      let a = n.getFullYear() - d.getFullYear();
+      if (n.getMonth() < d.getMonth() || (n.getMonth() === d.getMonth() && n.getDate() < d.getDate())) a--;
+      return a;
+    }
+    function validDob(dob) { const a = ageFromDob(dob); return a !== null && a >= 12 && a <= 25; }
+    // Năm học bắt đầu từ tháng 8/9; sinh năm Y thì học lớp 10 vào năm học Y+15
+    function classFromDob(dob) {
+      const d = parseDob(dob);
+      if (!d) return null;
+      const n = new Date();
+      const sy = n.getMonth() >= 7 ? n.getFullYear() : n.getFullYear() - 1;
+      return String(Math.min(12, Math.max(10, 10 + sy - d.getFullYear() - 15)));
+    }
+    function setDob(dob) {
+      if (dob === state.user.dob) return;
+      state.user.dob = dob;
+      state.user.age = dob ? ageFromDob(dob) : null;
+      if (dob) state.activeYear = classFromDob(dob);
+    }
+    // Tháng 8 + đã nhập đủ Cuối kì 2 của mọi môn → tự lên lớp (mỗi năm tối đa 1 lần)
+    function maybeAutoPromote() {
+      const now = new Date();
+      const yr = state.activeYear;
+      if (now.getMonth() !== 7 || state.user.promotedYear === now.getFullYear() || yr === '12') return false;
+      if (!getActiveSubjects().every(n => isNum(peekSubjectData(yr, n).hk2.ck))) return false;
+      state.activeYear = String(Number(yr) + 1);
+      state.user.promotedYear = now.getFullYear();
+      saveState();
+      showToast(`Đã đủ điểm Cuối kì 2 — tự chuyển lên Lớp ${state.activeYear}! 🎉`);
+      return true;
+    }
+
+    function ageToClass(age) {
+      const a = Number(age);
+      if (!age || !isFinite(a)) return null;
+      return a <= 15 ? '10' : a === 16 ? '11' : '12';
+    }
+
+    // ==================== CALCULATIONS ====================
+    function parseScore(val) {
+      if (val === null || val === undefined) return { valid: true, value: null };
+      const str = String(val).trim();
+      if (str === '') return { valid: true, value: null };
+      if (!/^(\d{1,2}([.,]\d*)?|[.,]\d+)$/.test(str)) return { valid: false, value: null };
+      const num = Number(str.replace(',', '.'));
+      if (isNaN(num) || num < 0 || num > 10) return { valid: false, value: null };
+      return { valid: true, value: Math.round(num * 100) / 100 };
+    }
+
+    function calcSemester(sem) {
+      const tx = sem.tx.filter(isNum);
+      const hasGK = isNum(sem.gk), hasCK = isNum(sem.ck);
+      if (!tx.length && !hasGK && !hasCK) return { avg: null, missingCK: true, isProvisional: true };
+      const c = v => Math.round(v * 100); // tính bằng số nguyên (phần trăm điểm) để làm tròn chính xác
+      const denom = tx.length + (hasGK ? 2 : 0) + (hasCK ? 3 : 0);
+      const num = tx.reduce((a, b) => a + c(b), 0) + (hasGK ? 2 * c(sem.gk) : 0) + (hasCK ? 3 * c(sem.ck) : 0);
+      return { avg: Math.round(num / denom / 10) / 10, missingCK: !hasCK, isProvisional: !hasGK || !hasCK };
+    }
+
+    function calcAnnual(subData) {
+      const r1 = calcSemester(subData.hk1);
+      const r2 = calcSemester(subData.hk2);
+      if (r1.avg === null && r2.avg === null) return { avg: null, r1, r2, missingCK: true, isProvisional: true };
+      if (r1.avg !== null && r2.avg !== null) {
+        const avg = Math.round((Math.round(r1.avg * 10) + 2 * Math.round(r2.avg * 10)) / 3) / 10;
+        return { avg, r1, r2, missingCK: r1.missingCK || r2.missingCK, isProvisional: r1.isProvisional || r2.isProvisional };
+      }
+      return { avg: r1.avg !== null ? r1.avg : r2.avg, r1, r2, missingCK: true, isProvisional: true };
+    }
+
+    function getSubjectScoresArray(subData, mode) {
+      const take = h => [...h.tx, h.gk, h.ck];
+      const arr = mode === 'hk1' ? take(subData.hk1) : mode === 'hk2' ? take(subData.hk2) : [...take(subData.hk1), ...take(subData.hk2)];
+      return arr.filter(isNum);
+    }
+
+    function getLatestScore(year, subName) {
+      const d = peekSubjectData(year, subName);
+      const seq = [
+        d.hk2.ck, d.hk2.gk, d.hk2.tx[3], d.hk2.tx[2], d.hk2.tx[1], d.hk2.tx[0],
+        d.hk1.ck, d.hk1.gk, d.hk1.tx[3], d.hk1.tx[2], d.hk1.tx[1], d.hk1.tx[0]
+      ];
+      for (const v of seq) {
+        if (v !== null && !isNaN(v)) return v;
+      }
+      return null;
+    }
+
+    function pillClass(v) {
+      if (v === null) return 'pill-empty';
+      if (v >= state.settings.highScore) return 'pill-high';
+      if (v >= state.settings.alertScore) return 'pill-mid';
+      if (v >= Math.min(5.0, state.settings.alertScore)) return 'pill-warn';
+      return 'pill-low';
+    }
+
+    // ==================== NAVIGATION & THEME ====================
+    function applyTheme() {
+      if (state.theme === 'default') {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', state.theme);
+      }
+      document.querySelectorAll('.theme-card').forEach(el => {
+        el.classList.toggle('active', el.dataset.themeId === state.theme);
+      });
+    }
+
+    function setTheme(themeId) {
+      state.theme = themeId;
+      saveState();
+      applyTheme();
+      if (state.page === 'charts') renderChartsPage();
+    }
+
+    function navigate(page) {
+      if (!PAGES.includes(page)) page = 'home';
+      const changed = document.getElementById(`page-${page}`).classList.contains('hidden');
+      state.page = page;
+      saveState();
+      toggleSidebar(false);
+      const titles = {
+        home: 'Trang chủ', grades: 'Bảng điểm', charts: 'Biểu đồ theo dõi',
+        timetable: 'Thời khóa biểu', exams: 'Lịch kiểm tra', settings: 'Cài đặt hệ thống'
+      };
+      document.getElementById('topPageTitle').textContent = titles[page];
+      document.querySelectorAll('.nav-item').forEach(btn => btn.classList.toggle('active', btn.dataset.page === page));
+      PAGES.forEach(p => {
+        const el = document.getElementById(`page-${p}`);
+        el.classList.toggle('hidden', p !== page);
+        if (p === page) { el.classList.remove('page-enter'); void el.offsetWidth; el.classList.add('page-enter'); }
+      });
+      if (changed) window.scrollTo(0, 0);
+      renderCurrentPage(true);
+    }
+
+    function switchYear(yr) {
+      state.activeYear = yr;
+      saveState();
+      document.querySelectorAll('.year-mini-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.yr === yr);
+      });
+      renderCurrentPage();
+    }
+
+    function toggleSidebar(open) {
+      document.getElementById('sidebar').classList.toggle('open', open);
+      document.getElementById('sidebarOverlay').classList.toggle('hidden', !open);
+      document.body.classList.toggle('modal-open', open);
+      const menu = document.querySelector('.menu-toggle');
+      if (menu) menu.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    // ==================== GOOGLE AUTH & ONBOARDING ====================
+    function renderTopUser() {
+      const u = state.user;
+      const av = document.getElementById('topUserAvatar');
+      const nameEl = document.getElementById('topUserName');
+      const classEl = document.getElementById('topUserClass');
+      if (!u.loggedIn) {
+        av.textContent = cloudLoading ? '☁️' : 'G';
+        nameEl.textContent = cloudLoading ? 'Đang tải…' : 'Đăng nhập';
+        classEl.textContent = cloudLoading ? 'Dữ liệu đám mây' : `Đang xem Lớp ${state.activeYear}`;
+        return;
+      }
+      const nm = u.name || 'Người dùng';
+      const ini = nm.charAt(0).toUpperCase();
+      if (u.avatar) av.innerHTML = `<img src="${escapeHtml(u.avatar)}" alt="" referrerpolicy="no-referrer" data-i="${escapeHtml(ini)}" onerror="this.parentNode.textContent=this.dataset.i" />`;
+      else av.textContent = ini;
+      nameEl.textContent = nm;
+      classEl.textContent = u.age ? `Lớp ${state.activeYear} • ${u.age} tuổi` : `Lớp ${state.activeYear}`;
+    }
+
+    function openUserAction() {
+      if (cloudLoading) { showToast('Đang tải dữ liệu từ đám mây, vui lòng đợi một chút…'); return; }
+      if (!state.user.loggedIn) {
+        startGoogleLogin();
+      } else {
+        navigate('settings');
+      }
+    }
+
+    const GOOGLE_CLIENT_ID = '530581194930-4ronvsbehs6skt4cs98evtpg1mjnjumj.apps.googleusercontent.com';
+    let gisReady = false;
+    let pendingCloudSync = false;
+    let cloudBusy = false;
+
+    function initGoogleSignIn() {
+      if (gisReady) return true;
+      if (location.protocol === 'file:' || typeof google === 'undefined' || !google.accounts || !google.accounts.id) return false;
+      google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCredential, cancel_on_tap_outside: true, itp_support: true });
+      gisReady = true;
+      return true;
+    }
+
+    function renderGoogleButton(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (!initGoogleSignIn()) {
+        if (id === 'authGoogleBtn') {
+          const why = location.protocol === 'file:' ? 'Đăng nhập Google chỉ hoạt động khi web chạy qua http(s), không mở trực tiếp file.' : 'Chưa tải được Google (kiểm tra kết nối Internet).';
+          el.innerHTML = `<p style="font-size:0.82rem; color:var(--muted);">${why} Bạn vẫn có thể nhập thủ công bên dưới.</p>`;
+          document.getElementById('manualLogin').open = true;
+        } else {
+          el.innerHTML = '<button class="google-btn" onclick="startGoogleLogin()">Đăng nhập</button>';
+        }
+        return;
+      }
+      el.innerHTML = '';
+      google.accounts.id.renderButton(el, { type: 'standard', theme: 'outline', size: 'large', text: 'continue_with', shape: 'pill', locale: 'vi' });
+    }
+
+    function onGisLoaded() {
+      if (state.user.loggedIn || cloudLoading) return;
+      if (state.page === 'home') renderHomePage();
+      if (!document.getElementById('authModal').classList.contains('hidden')) renderGoogleButton('authGoogleBtn');
+      try { if (initGoogleSignIn()) google.accounts.id.prompt(); } catch {} // gợi ý đăng nhập một chạm
+    }
+
+    function decodeJwt(t) {
+      const b = t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      return JSON.parse(decodeURIComponent(atob(b).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+    }
+
+    // ---- Trạng thái tải dữ liệu đám mây ----
+    function setCloudLoading(on, msg) {
+      cloudLoading = Boolean(on);
+      document.body.classList.toggle('is-cloud-loading', cloudLoading);
+      const el = document.getElementById('cloudLoading');
+      if (el) {
+        el.classList.toggle('hidden', !cloudLoading);
+        const s = el.querySelector('span');
+        if (s) s.textContent = msg || 'Đang tải dữ liệu của bạn từ đám mây…';
+      }
+      try { renderTopUser(); if (state.page === 'home') renderHomePage(); } catch {}
+    }
+
+    // Máy này đã có điểm/lịch thi do người dùng nhập chưa? (chỉ có hồ sơ/cài đặt thì không tính)
+    function localHasData(s) {
+      try {
+        if (s.exams && s.exams.length) return true;
+        return ['10', '11', '12'].some(y => {
+          if (s.passFail[y] && Object.keys(s.passFail[y]).length) return true;
+          const g = s.grades[y] || {};
+          return Object.keys(g).some(n => ['hk1', 'hk2'].some(h => {
+            const d = g[n] && g[n][h];
+            return d && (isNum(d.gk) || isNum(d.ck) || (d.tx || []).some(isNum));
+          }));
+        });
+      } catch { return false; }
+    }
+
+    // Đăng nhập tài khoản đã có dữ liệu trên mây (vd. điện thoại mới): tải về thay vì bắt nhập lại
+    async function adoptCloudAccount(remote) {
+      let parsed;
+      try { parsed = JSON.parse(remote.stateJson); } catch { return false; }
+      if (!parsed || typeof parsed !== 'object') return false;
+      if (localHasData(state)) {
+        const useCloud = confirm('Tài khoản này đã có dữ liệu trên đám mây, nhưng máy này cũng đang có bảng điểm riêng.\n\nOK = dùng dữ liệu đám mây (dữ liệu trên máy được lưu thành file JSON sao lưu rồi mới bị thay thế).\nHủy = giữ dữ liệu trên máy, không đồng bộ (có thể bật Đồng bộ đám mây sau trong Cài đặt).');
+        if (!useCloud) return false;
+        try { const { timetables, ...rest } = state; localStorage.setItem(STORAGE_KEY + '_before_cloud_backup', JSON.stringify(rest)); } catch {}
+        try { exportJSON(); } catch {}
+      }
+      state = normalizeState(Object.assign({}, parsed, { timetables: state.timetables }));
+      state.settings.cloudSync = true;
+      state.user.loggedIn = true;
+      saveState(true); // sang chế độ đám mây: máy không giữ bảng điểm
+      applyTheme();
+      renderCurrentPage(true);
+      return true;
+    }
+
+    // Firebase gọi khi đã tải xong dữ liệu từ mây (đăng nhập hoặc mở lại trang)
+    function afterCloudLoad() {
+      setCloudLoading(false);
+      try { maybeAutoPromote(); } catch {}
+      renderCurrentPage(true);
+      try { checkStudyReminders(false); } catch {}
+      if (!loginBusy && state.user.loggedIn && !state.user.onboarded) openOnboardingModal();
+    }
+
+    // Máy đang ở chế độ đám mây nhưng phiên Firebase đã hết hạn
+    function onNoCloudSession() {
+      if (!state.settings.cloudSync) return;
+      setCloudLoading(false);
+      showToast('Phiên đăng nhập đã hết hạn. Hãy đăng nhập Google lại để tải dữ liệu.', 'error');
+      if (!loginBusy) startGoogleLogin();
+    }
+    window.stAdoptCloud = adoptCloudAccount;
+    window.stAfterCloudLoad = afterCloudLoad;
+    window.stOnNoSession = onNoCloudSession;
+
+    async function handleGoogleCredential(resp) {
+      let p;
+      try { p = decodeJwt(resp.credential); }
+      catch { showToast('Không đọc được thông tin tài khoản Google.', 'error'); return; }
+      if (loginBusy) return;
+      loginBusy = true;
+      const profile = { name: p.name || p.given_name || 'Người dùng Google', email: p.email || '', avatar: p.picture || '' };
+      const hello = p.given_name || p.name || 'bạn';
+      try {
+        closeModal('authModal');
+        setCloudLoading(true, 'Đang đăng nhập và kiểm tra dữ liệu của bạn…');
+        // Phải xong bước kiểm tra đám mây TRƯỚC khi quyết định có hỏi hồ sơ hay không
+        let res = { status: 'nofirebase' };
+        if (window.stFirebaseSignIn) {
+          try { res = await window.stFirebaseSignIn(resp.credential, profile); } catch { res = { status: 'error' }; }
+        }
+        if (state.settings.cloudSync && res.status === 'error') {
+          showToast('Chưa đăng nhập được vào đám mây nên chưa tải được dữ liệu. Hãy thử lại.', 'error');
+          return;
+        }
+        applyLoginResult({ ...profile, dob: null, keepDob: true, keepName: res.status === 'pulled' });
+        showToast(res.status === 'pulled' ? `Xin chào, ${hello}! Đã tải dữ liệu của bạn từ đám mây.` : `Xin chào, ${hello}!`);
+      } finally {
+        loginBusy = false;
+        setCloudLoading(false);
+      }
+    }
+
+    function startGoogleLogin() {
+      if (cloudLoading) { showToast('Đang tải dữ liệu từ đám mây, vui lòng đợi một chút…'); return; }
+      document.getElementById('login_name').value = state.user.name || '';
+      document.getElementById('login_email').value = state.user.email || '';
+      document.getElementById('login_age').value = state.user.dob || '';
+      document.getElementById('authModal').classList.remove('hidden');
+      renderGoogleButton('authGoogleBtn');
+    }
+
+
+    function completeLocalGoogleLogin() {
+      if (state.settings.cloudSync) { showToast('Đồng bộ đám mây đang bật: hãy đăng nhập bằng nút Google để tải dữ liệu của bạn (nhập thủ công sẽ không lưu được).', 'error'); return; }
+      const name = document.getElementById('login_name').value.trim();
+      const email = document.getElementById('login_email').value.trim();
+      const dob = document.getElementById('login_age').value.trim() || null;
+      if (!name) { showToast('Vui lòng nhập tên của bạn!', 'error'); document.getElementById('login_name').focus(); return; }
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Email chưa đúng định dạng.', 'error'); document.getElementById('login_email').focus(); return; }
+      if (dob && !validDob(dob)) { showToast('Ngày sinh không hợp lệ (tuổi phải từ 12 đến 25).', 'error'); document.getElementById('login_age').focus(); return; }
+      applyLoginResult({ name, email, avatar: '', dob });
+    }
+
+    function applyLoginResult({ name, email, avatar, dob, keepDob, keepName }) {
+      state.user.loggedIn = true;
+      if (!(keepName && state.user.name)) state.user.name = name; // dữ liệu mây đã có tên người dùng tự đặt thì giữ
+      state.user.email = email;
+      state.user.avatar = avatar;
+      if (dob) setDob(dob);
+      else if (!keepDob) setDob(null); // xóa ngày sinh ở ô nhập thì xóa thật
+      if (pendingCloudSync) { // đăng nhập xong thì tiếp tục luồng bật đồng bộ (có xác nhận + sao lưu)
+        pendingCloudSync = false;
+        setTimeout(() => setCloudSync(true), 600);
+      }
+      saveState();
+      closeModal('authModal');
+      renderTopUser();
+      if (!state.user.onboarded) openOnboardingModal();
+      else renderCurrentPage(true);
+    }
+
+    function openOnboardingModal() {
+      document.getElementById('ob_ageBox').classList.toggle('hidden', Boolean(state.user.dob));
+      document.getElementById('ob_closeBtn').classList.toggle('hidden', !state.user.onboarded);
+      document.getElementById('ob_age').value = state.user.dob || '';
+      document.getElementById('ob_block').value = state.settings.examBlock;
+      document.getElementById('ob_title').value = state.settings.targetTitle;
+      document.getElementById('ob_alert').value = state.settings.alertScore;
+      document.getElementById('ob_high').value = state.settings.highScore;
+      document.getElementById('ob_fluc').value = state.settings.flucWarnPct;
+
+      const grid = document.getElementById('ob_electivesGrid');
+      grid.innerHTML = ELECTIVE_POOL.map(sub => {
+        const checked = state.settings.electives.includes(sub) ? 'checked' : '';
+        return `<label class="check-chip"><input type="checkbox" value="${sub}" ${checked}> ${sub}</label>`;
+      }).join('');
+
+      document.getElementById('onboardingModal').classList.remove('hidden');
+    }
+
+    function readThresholds(a, h, f) {
+      const raw = [a, h, f].map(id => document.getElementById(id).value.trim());
+      const [al, hi, fl] = raw.map(Number);
+      if (raw[0] === '' || raw[1] === '' || !isFinite(al) || !isFinite(hi) || al < 0 || hi > 10 || al >= hi) {
+        showToast('Mức Báo động phải nhỏ hơn mức Cao và nằm trong khoảng 0 – 10.', 'error');
+        return null;
+      }
+      if (raw[2] === '' || !isFinite(fl) || fl < 5 || fl > 100) {
+        showToast('Ngưỡng dao động phải từ 5% đến 100%.', 'error');
+        return null;
+      }
+      return { alertScore: al, highScore: hi, flucWarnPct: fl };
+    }
+
+    function finishOnboarding() {
+      let dob = state.user.dob;
+      if (!dob) {
+        dob = document.getElementById('ob_age').value.trim();
+        if (!validDob(dob)) { showToast('Hãy nhập ngày sinh hợp lệ (tuổi từ 12 đến 25).', 'error'); return; }
+      }
+      const selected = [...document.querySelectorAll('#ob_electivesGrid input:checked')].map(i => i.value);
+      if (selected.length < 2) { showToast('Hãy chọn ít nhất 2 môn lựa chọn (chương trình GDPT 2018 thường chọn 5 môn).', 'error'); return; }
+      const th = readThresholds('ob_alert', 'ob_high', 'ob_fluc');
+      if (!th) return;
+      if (!state.user.dob) setDob(dob);
+      Object.assign(state.settings, th, {
+        electives: ELECTIVE_POOL.filter(x => selected.includes(x)),
+        examBlock: document.getElementById('ob_block').value,
+        targetTitle: document.getElementById('ob_title').value
+      });
+      state.user.onboarded = true;
+      saveState();
+      closeModal('onboardingModal');
+      renderCurrentPage(true);
+    }
+
+    // ==================== PAGE: HOME ====================
+    function setHomeMode(mode) {
+      state.homeMode = mode;
+      saveState();
+      renderHomePage();
+    }
+
+    // So điểm mới nhất của từng môn với cột điểm liền trước (TX1-4 → Giữa kì → Cuối kì, HK1 rồi HK2), bất kể loại cột
+    function scoreTrends(year) {
+      const res = { down: [], up: [] };
+      getActiveSubjects().forEach(name => {
+        const d = peekSubjectData(year, name);
+        const seq = [];
+        ['hk1', 'hk2'].forEach(h => {
+          const hk = h === 'hk1' ? 'HK1' : 'HK2';
+          d[h].tx.forEach((v, i) => { if (isNum(v)) seq.push({ v, label: `Thường xuyên ${i + 1} ${hk}` }); });
+          if (isNum(d[h].gk)) seq.push({ v: d[h].gk, label: `Giữa kì ${hk}` });
+          if (isNum(d[h].ck)) seq.push({ v: d[h].ck, label: `Cuối kì ${hk}` });
+        });
+        if (seq.length < 2) return;
+        const prev = seq[seq.length - 2], cur = seq[seq.length - 1];
+        const item = { name: name.replace(/ \(.*\)$/, ''), prev: prev.v, cur: cur.v, label: cur.label };
+        if (cur.v < prev.v) res.down.push(item);
+        else if (cur.v > prev.v) res.up.push(item);
+      });
+      return res;
+    }
+
+    function renderScoreFeed() {
+      const el = document.getElementById('heroScoreFeed');
+      if (!el) return;
+      const tr = scoreTrends(state.activeYear);
+      const n = v => String(Math.round(v * 100) / 100);
+      const names = list => list.slice(0, 3).map(x => escapeHtml(x.name)).join(', ') + (list.length > 3 ? '…' : ''); // tối đa 3 môn để câu luôn ngắn gọn
+      let html = '';
+      if (tr.down.length) html += `<div>⚠️ ${names(tr.down)} thấp hơn lần kiểm tra trước, nhớ ôn lại bài nhé!</div>`;
+      if (tr.up.length) html += `<div>🎉 Chúc mừng! ${names(tr.up)} cao hơn lần trước.</div>`;
+      el.innerHTML = html;
+    }
+
+    function renderHomePage() {
+      const u = state.user;
+      const yr = state.activeYear;
+      const subjects = getActiveSubjects();
+
+      // Greeting Banner
+      document.getElementById('heroGreeting').textContent = u.loggedIn
+        ? `Xin chào, ${u.name || 'bạn'}!`
+        : (cloudLoading ? 'Đang tải dữ liệu của bạn…' : 'Xin chào người dùng!');
+      document.getElementById('heroSub').textContent = u.loggedIn
+        ? `Chúc bạn học tập thật tốt! Hiện bạn đang theo dõi bảng điểm Lớp ${yr}.`
+        : 'Hãy đăng nhập bằng Google để lưu hồ sơ, xác định lớp theo tuổi và thiết lập môn học.';
+
+      const badges = [];
+      if (u.age) badges.push(`<span class="hero-badge">🎂 ${u.age} tuổi • Lớp ${yr}</span>`);
+      badges.push(`<span class="hero-badge">🎯 Khối thi: ${state.settings.examBlock}</span>`);
+      badges.push(`<span class="hero-badge">🏅 Mục tiêu: ${state.settings.targetTitle === 'HSXX' ? 'Học sinh Xuất sắc' : 'Học sinh Giỏi'}</span>`);
+      badges.push(`<span class="hero-badge">📚 ${subjects.length} môn tính điểm</span>`);
+      document.getElementById('heroBadges').innerHTML = badges.join('');
+      renderScoreFeed();
+
+      document.getElementById('heroAuthAction').innerHTML = u.loggedIn
+        ? `<button class="btn btn-soft" onclick="openOnboardingModal()">✏️ Thiết lập lại môn/khối</button>`
+        : '<div id="heroGoogleBtn"></div>';
+      if (!u.loggedIn && !cloudLoading) renderGoogleButton('heroGoogleBtn');
+
+      // Compute subject averages for active Home mode
+      const hasHK2Scores = subjects.some(n => { const d=peekSubjectData(yr,n).hk2; return [...d.tx,d.gk,d.ck].some(isNum); });
+      const allYearFinal = subjects.length > 0 && subjects.every(n => { const d=peekSubjectData(yr,n); return isNum(d.hk1.ck) && isNum(d.hk2.ck); });
+      const mode = state.homeMode || 'hk1';
+      document.querySelectorAll('[data-homemode]').forEach(b => b.classList.toggle('active', b.dataset.homemode === mode));
+      document.getElementById('homeYearLabel').textContent = `Lớp ${yr}`;
+
+      const periodUnavailable = (mode === 'hk2' && !hasHK2Scores) || (mode === 'year' && !allYearFinal);
+      const subAvgs = subjects.map(name => {
+        const d = peekSubjectData(yr, name);
+        let res;
+        if (mode === 'hk1') res = calcSemester(d.hk1);
+        else if (mode === 'hk2') res = calcSemester(d.hk2);
+        else res = calcAnnual(d);
+        return { name, avg: periodUnavailable ? null : res.avg, missingCK: res.missingCK, isProvisional: res.isProvisional, data: d };
+      });
+
+      if (periodUnavailable) {
+        const label = mode === 'hk2' ? 'Học kì 2' : 'Cuối năm';
+        document.getElementById('homeTiersGrid').innerHTML = '';
+        document.getElementById('homeFlucList').innerHTML = `<div class="chart-annotation info">Chưa có dữ liệu ${label}.</div>`;
+        document.getElementById('homeRankTitle').textContent = 'Chưa có thông tin';
+        document.getElementById('homeRankDesc').textContent = mode === 'year'
+          ? 'Kết quả cuối năm sẽ hiển thị sau khi hoàn thành và nhập điểm Học kì 2.'
+          : 'Chưa có điểm Học kì 2. Hãy nhập điểm khi học kì bắt đầu.';
+        document.getElementById('homeGpaLine').textContent = 'ĐTB chung: Chưa có thông tin';
+        document.getElementById('adviceTitle').textContent = '✨ Gợi ý học tập';
+        document.getElementById('adviceList').innerHTML = '<li>Tiếp tục cập nhật điểm để theo dõi tiến độ học tập.</li>';
+        document.getElementById('homeSubjectsGrid').innerHTML = subjects.map(name => `<div class="sub-mini-card"><span>${escapeHtml(name)}</span><span class="pill pill-empty">Chưa có thông tin</span></div>`).join('');
+        return;
+      }
+
+      // 3 Alert Tiers
+      const alertLimit = Number(state.settings.alertScore);
+      const highLimit = Number(state.settings.highScore);
+
+      const dangerList = subAvgs.filter(s => s.avg !== null && s.avg < alertLimit);
+      const warnList = subAvgs.filter(s => s.avg !== null && s.avg >= alertLimit && s.avg < highLimit);
+      const goodList = subAvgs.filter(s => s.avg !== null && s.avg >= highLimit);
+
+      const renderTierCard = (cls, title, ruleText, list) => `
+        <div class="tier-card ${cls}">
+          <div class="tier-head">
+            <div class="tier-title">${title}</div>
+            <span class="tier-rule">${ruleText}</span>
+          </div>
+          <div class="tier-list">
+            ${list.length
+              ? list.map(s => `<div class="tier-item"><span>${escapeHtml(s.name)}</span><span class="pill ${pillClass(s.avg)}">${s.avg.toFixed(1)}</span></div>`).join('')
+              : `<div class="tier-empty">Không có môn nào trong nhóm này</div>`}
+          </div>
+        </div>
+      `;
+
+      document.getElementById('homeTiersGrid').innerHTML =
+        renderTierCard('danger', '🚨 Môn có mức điểm báo động', `< ${alertLimit}`, dangerList) +
+        renderTierCard('warn', '⚠️ Môn học cần chú ý', `${alertLimit} – < ${highLimit}`, warnList) +
+        renderTierCard('good', '🌟 Môn học mức điểm cao', `≥ ${highLimit}`, goodList);
+
+      // Fluctuation Amplitude Section
+      const flucWarn = Number(state.settings.flucWarnPct);
+      document.getElementById('flucThresholdLabel').textContent = `${flucWarn}%`;
+
+      document.getElementById('homeFlucList').innerHTML = subAvgs.map(s => {
+        const pts = getSubjectScoresArray(s.data, mode);
+        if (pts.length < 2) {
+          return `
+            <div class="fluc-item">
+              <div class="fluc-top">
+                <span class="fluc-name">${escapeHtml(s.name)}</span>
+                <span class="fluc-pct" style="color:var(--muted)">Chưa đủ dữ liệu</span>
+              </div>
+              <div class="fluc-track"><div class="fluc-fill" style="width:0%"></div></div>
+              <div class="fluc-meta"><span>Cần ít nhất 2 cột điểm để đo dao động</span></div>
+            </div>
+          `;
+        }
+        const maxV = Math.max(...pts);
+        const minV = Math.min(...pts);
+        const avgV = pts.reduce((a, b) => a + b, 0) / pts.length;
+        const pct = avgV > 0 ? Math.round(((maxV - minV) / avgV) * 1000) / 10 : 0;
+        const barW = Math.min(100, pct);
+
+        let barColor = '#16a34a'; // Green
+        let statusTag = 'Ổn định';
+        if (pct >= flucWarn) {
+          barColor = '#dc2626'; // Red
+          statusTag = '⚠️ Cảnh báo dao động cao';
+        } else if (pct >= flucWarn * 0.6) {
+          barColor = '#d97706'; // Yellow
+          statusTag = 'Dao động trung bình';
+        }
+
+        return `
+          <div class="fluc-item">
+            <div class="fluc-top">
+              <span class="fluc-name">${escapeHtml(s.name)}</span>
+              <span class="fluc-pct" style="color:${barColor}">${pct.toFixed(1)}%</span>
+            </div>
+            <div class="fluc-track">
+              <div class="fluc-fill" style="width:${barW}%; background:${barColor};"></div>
+            </div>
+            <div class="fluc-meta">
+              <span>Thấp nhất: ${minV} • Cao nhất: ${maxV} • TB bài KT: ${avgV.toFixed(1)}</span>
+              <strong style="color:${barColor}">${statusTag}</strong>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Classification & Title Pull Advice
+      const validAvgs = subAvgs.filter(s => s.avg !== null);
+      const gpa = validAvgs.length
+        ? Math.round(validAvgs.reduce((a, s) => a + Math.round(s.avg * 10), 0) / validAvgs.length) / 10
+        : null;
+
+      document.getElementById('homeGpaLine').textContent = `ĐTB chung các môn: ${gpa !== null ? gpa.toFixed(1) : '--'}`;
+
+      // Xếp loại theo TT 22/2021: >=6 môn đạt mức, 1 trong 3 môn Toán/Văn/Ngoại ngữ đạt mức, không môn nào dưới sàn, môn nhận xét đều "Đạt"
+      const pfData0 = state.passFail[yr] || {};
+      const pfFail = MANDATORY_PASSFAIL.filter(m => pfData0[m] === 'Chưa đạt');
+      const cnt = t => validAvgs.filter(s => s.avg >= t).length;
+      const minAvg = validAvgs.length ? Math.min(...validAvgs.map(s => s.avg)) : 0;
+      const mainMax = Math.max(-1, ...validAvgs.filter(s => MAIN3.includes(s.name)).map(s => s.avg));
+      const mainOK = mainMax >= 8.0;
+      const anyProv = validAvgs.some(s => s.isProvisional);
+
+      let rankLabel = 'Chưa xếp loại';
+      let rankDesc = `Mới nhập điểm ${validAvgs.length}/${subAvgs.length} môn.`;
+
+      if (subAvgs.length < 6) {
+        rankDesc = 'Cần ít nhất 6 môn tính điểm để xếp loại (vào Setting để chọn thêm môn).';
+      } else if (validAvgs.length === subAvgs.length) {
+        if (pfFail.length) {
+          rankLabel = '🤔 Chưa đạt';
+          rankDesc = `Có nội dung đánh giá "Chưa đạt": ${pfFail.join(', ')}.`;
+        } else if (minAvg >= 6.5 && cnt(9) >= 6 && mainOK) {
+          rankLabel = '😍 Học sinh Xuất sắc (HSXS)';
+          rankDesc = `Mọi môn ≥ 6.5, ${cnt(9)} môn ≥ 9.0 và có môn Toán/Văn/Ngoại ngữ ≥ 8.0.`;
+        } else if (minAvg >= 6.5 && cnt(8) >= 6 && mainOK) {
+          rankLabel = '😘 Học sinh Giỏi (HSG)';
+          rankDesc = `Mọi môn ≥ 6.5, ${cnt(8)} môn ≥ 8.0 và có môn Toán/Văn/Ngoại ngữ ≥ 8.0.`;
+        } else if (minAvg >= 5.0 && cnt(6.5) >= 6 && mainMax >= 6.5) {
+          rankLabel = '🤔 Học sinh Khá';
+          rankDesc = `Mọi môn ≥ 5.0, ${cnt(6.5)} môn ≥ 6.5 và có môn Toán/Văn/Ngoại ngữ ≥ 6.5.`;
+        } else if (minAvg >= 3.5 && cnt(5) >= 6 && mainMax >= 5.0) {
+          rankLabel = '🤔 Đạt';
+          rankDesc = `Mọi môn ≥ 3.5, ${cnt(5)} môn ≥ 5.0.`;
+        } else {
+          rankLabel = '🤔 Chưa đạt';
+          rankDesc = 'Cần cải thiện các môn dưới chuẩn.';
+        }
+        if (anyProv) rankDesc += ' (Tạm tính — còn thiếu điểm Giữa kì/Cuối kì.)';
+      }
+
+      document.getElementById('homeRankTitle').textContent = rankLabel;
+      document.getElementById('homeRankDesc').textContent = rankDesc;
+
+      // Advice to reach targetTitle (HSXX or HSG)
+      const target = state.settings.targetTitle || 'HSXX';
+      const targetHigh = target === 'HSXX' ? 9.0 : 8.0;
+      const targetName = target === 'HSXX' ? 'Học sinh Xuất sắc (HSXS)' : 'Học sinh Giỏi (HSG)';
+      document.getElementById('adviceTitle').textContent = '✨ Gợi ý học tập';
+      const T = targetHigh;
+const fmt = n => n.toFixed(1);
+      const short = n => n.replace(/ \(.*\)$/, '');
+      const tShort = target === 'HSXX' ? 'HSXS' : 'HSG';
+      // Điểm Cuối kì tối thiểu để ĐTB học kì (làm tròn 1 số lẻ) đạt mức req
+      const needCK = (sem, req) => {
+        if (!sem || isNum(sem.ck)) return null;
+        const c = v => Math.round(v * 100);
+        const tx = sem.tx.filter(isNum), hasGK = isNum(sem.gk);
+        const denom = tx.length + (hasGK ? 2 : 0) + 3;
+        const num = tx.reduce((a, b) => a + c(b), 0) + (hasGK ? 2 * c(sem.gk) : 0);
+        return Math.max(0, Math.ceil(((req * 100 - 5) * denom - num) / 30) / 10);
+      };
+      const scored = subAvgs.filter(x => x.avg !== null);
+      const noScore = subAvgs.filter(x => x.avg === null);
+      const reached = scored.filter(x => x.avg >= T).sort((a, b) => b.avg - a.avg);
+      const gapList = scored.filter(x => x.avg < T).sort((a, b) => b.avg - a.avg);
+      const below65 = scored.filter(x => x.avg < 6.5).sort((a, b) => a.avg - b.avg);
+      const mainReached = reached.some(x => MAIN3.includes(x.name));
+      const attained = target === 'HSXX' ? rankLabel.includes('Xuất sắc') : /Xuất sắc|Giỏi/.test(rankLabel);
+      const lines = [];
+      lines.push(`📊 Bạn đã có <strong>${Math.min(6, reached.length)}/6 môn</strong> đạt từ ${fmt(T)} trở lên cho danh hiệu <strong>${tShort}</strong>${reached.length ? ` (${reached.slice(0, 6).map(x => `${short(x.name)} ${fmt(x.avg)}`).join(', ')})` : ''}.`);
+      if (attained && !pfFail.length) {
+        lines.push(`🎉 Điểm hiện tại đã đủ điều kiện <strong>${targetName}</strong>. Hãy giữ vững các môn đã đạt, nhất là những môn sát mốc ${fmt(T)}.`);
+      } else {
+        const need = Math.max(0, 6 - reached.length);
+        let picks = gapList.slice(0, need);
+        if (!mainReached) {
+          const m = gapList.find(x => MAIN3.includes(x.name));
+          if (m && !picks.includes(m)) { if (picks.length) picks[picks.length - 1] = m; else picks = [m]; }
+        }
+        const pickText = x => {
+          const ck = mode !== 'year' ? needCK(x.data[mode], T) : null;
+          return `${short(x.name)} ${fmt(x.avg)} → ${fmt(T)}` + (ck !== null && ck <= 10 ? ` (Cuối kì ≥ ${fmt(ck)})` : '');
+        };
+        const parts = [];
+        if (picks.length) parts.push(`thêm <strong>${picks.length} môn</strong> lên ${fmt(T)}: ${picks.map(pickText).join(', ')}`);
+        if (below65.length) parts.push(`${below65.map(x => `${short(x.name)} ${fmt(x.avg)}`).join(', ')} phải lên ít nhất 6.5`);
+        if (noScore.length) parts.push(`nhập điểm ${noScore.map(x => short(x.name)).join(', ')} để tính chính xác`);
+        if (parts.length) lines.push(`🔺 <strong>Cần kéo:</strong> ${parts.join('; ')}.`);
+        const first = below65[0] || picks[0];
+        if (first) lines.push(`💡 <strong>Ưu tiên:</strong> ${short(first.name)} trước${first.avg < 6.5 ? ', vì đang dưới mốc 6.5 và đây là điều kiện bắt buộc' : `, vì chỉ còn thiếu ${fmt(T - first.avg)} điểm`}.`);
+      }
+      const near = [...scored].sort((a, b) => Math.abs(a.avg - alertLimit) - Math.abs(b.avg - alertLimit)).slice(0, 3);
+      const inAlert = scored.filter(x => x.avg < alertLimit).sort((x, y) => x.avg - y.avg);
+      const notes = [];
+      if (near.length) notes.push(`${near.length} môn gần mức báo động (&lt; ${fmt(alertLimit)}) nhất là ${near.map(x => `${short(x.name)} ${fmt(x.avg)}${x.avg < alertLimit ? ' 🚨' : ''}`).join(', ')}`);
+      if (pfFail.length) notes.push(`cần chuyển ${pfFail.join(', ')} sang Đạt`);
+      if (notes.length) lines.push(`⚠️ <strong>Lưu ý:</strong> ${notes.join('; ')}.`);
+      // Dòng thêm: chỉ hiện khi thật sự có môn dưới mức báo động
+      if (inAlert.length) lines.push(`🚨 <strong>Báo động:</strong> ${inAlert.length} môn đang dưới mức báo động (&lt; ${fmt(alertLimit)}): ${inAlert.map(x => `${short(x.name)} ${fmt(x.avg)}`).join(', ')}.`);
+
+      document.getElementById('adviceList').innerHTML = lines
+        .map((l, i) => `<li class="adv-line ai-reveal" style="animation-delay:${i * 0.12}s">${l}</li>`)
+        .join('');
+
+      document.getElementById('homeSubjectsGrid').innerHTML = subAvgs.map(s => `
+        <div class="sub-mini-card">
+          <span>${escapeHtml(s.name)}</span>
+          <span class="pill ${pillClass(s.avg)}">${s.avg !== null ? s.avg.toFixed(1) + (s.isProvisional ? '*' : '') : '--'}</span>
+        </div>
+      `).join('');
+    }
+
+    // ==================== PAGE: GRADEBOOK ====================
+    function setGradeView(view) {
+      state.gradeView = view;
+      saveState();
+      renderGradebookPage();
+    }
+
+    function readGradeCell(subName, sem, type, idx) {
+      const d = peekSubjectData(state.activeYear, subName)[sem];
+      return type === 'tx' ? d.tx[idx] : d[type];
+    }
+
+    function refreshGradeBadges(subName) {
+      const d = peekSubjectData(state.activeYear, subName);
+      const id = slugify(subName);
+      [['gb-hk1-', calcSemester(d.hk1)], ['gb-hk2-', calcSemester(d.hk2)], ['gb-yr-', calcAnnual(d)]].forEach(([p, r]) => {
+        const el = document.getElementById(p + id);
+        if (el) el.innerHTML = avgPillHTML(r.avg, r.isProvisional);
+      });
+    }
+
+    function onGradeCellInput(el, subName, sem, type, txIdx) {
+      el._ctx = { subName, sem, type, txIdx };
+      const parsed = parseScore(el.value);
+      el.classList.toggle('invalid', !parsed.valid);
+      el.title = parsed.valid ? '' : 'Điểm phải là số từ 0 đến 10';
+      if (!parsed.valid) return;
+      const d = ensureSubjectData(state.activeYear, subName);
+      if (type === 'tx') d[sem].tx[txIdx] = parsed.value;
+      else d[sem][type] = parsed.value;
+      saveState();
+      refreshGradeBadges(subName);
+    }
+
+    // Rời ô: chuẩn hóa hiển thị, nếu nhập sai thì trả về giá trị đang lưu (không để ô và dữ liệu lệch nhau)
+    function onGradeCellCommit(el) {
+      const c = el._ctx;
+      if (!c) return;
+      if (!parseScore(el.value).valid) showToast('Điểm không hợp lệ (0 – 10), đã khôi phục giá trị cũ.', 'error');
+      const stored = readGradeCell(c.subName, c.sem, c.type, c.txIdx);
+      el.value = stored === null || stored === undefined ? '' : stored;
+      el.classList.remove('invalid');
+      el.title = '';
+      el._ctx = null;
+      if (maybeAutoPromote()) renderCurrentPage(true);
+    }
+
+    function avgPillHTML(avg, provisional) {
+      if (avg === null) return `<span class="pill pill-empty">--</span>`;
+      return `<span class="pill ${pillClass(avg)}">${avg.toFixed(1)}${provisional ? '*' : ''}</span>`;
+    }
+
+    function togglePassFail(subName, val) {
+      if (!state.passFail[state.activeYear]) state.passFail[state.activeYear] = {};
+      state.passFail[state.activeYear][subName] = val;
+      saveState();
+    }
+
+    function renderGradebookPage() {
+      const yr = state.activeYear;
+      const view = state.gradeView || 'hk1';
+      const subjects = getActiveSubjects();
+      document.getElementById('gradePageYear').textContent = `Lớp ${yr}`;
+      const hasHK2 = subjects.some(n => { const d=peekSubjectData(yr,n).hk2; return [...d.tx,d.gk,d.ck].some(isNum); });
+      const allFinal = subjects.length > 0 && subjects.every(n => { const d=peekSubjectData(yr,n); return isNum(d.hk1.ck) && isNum(d.hk2.ck); });
+      document.querySelectorAll('[data-gview]').forEach(b => {
+        b.classList.toggle('active', b.dataset.gview === view);
+      });
+
+      const container = document.getElementById('gradeTablesContainer');
+
+      const renderSemTable = (semKey, title) => {
+        let rows = subjects.map(subName => {
+          const d = peekSubjectData(yr, subName)[semKey];
+          const res = calcSemester(d);
+          const ann = calcAnnual(peekSubjectData(yr, subName));
+          const idBase = slugify(subName);
+          const v = x => (x === null || x === undefined ? '' : x);
+          return `
+            <tr>
+              <td class="left" style="font-weight:700;">${subName}</td>
+              ${[0,1,2,3].map(i => `<td><input class="score-input" type="text" inputmode="decimal" placeholder="-" value="${v(d.tx[i])}" oninput="onGradeCellInput(this,'${escapeAttr(subName)}','${semKey}','tx',${i})" onblur="onGradeCellCommit(this)" /></td>`).join('')}
+              <td><input class="score-input gk" type="text" inputmode="decimal" placeholder="-" value="${v(d.gk)}" oninput="onGradeCellInput(this,'${escapeAttr(subName)}','${semKey}','gk',0)" onblur="onGradeCellCommit(this)" /></td>
+              <td><input class="score-input ck" type="text" inputmode="decimal" placeholder="-" value="${v(d.ck)}" oninput="onGradeCellInput(this,'${escapeAttr(subName)}','${semKey}','ck',0)" onblur="onGradeCellCommit(this)" /></td>
+              <td id="gb-${semKey}-${idBase}">${avgPillHTML(res.avg, res.isProvisional)}</td>
+              ${semKey === 'hk2' && allFinal ? `<td id="gb-yr-${idBase}">${avgPillHTML(ann.avg, ann.isProvisional)}</td>` : ''}
+            </tr>
+          `;
+        }).join('');
+
+        return `
+          <h3 style="margin:14px 0 8px; font-size:0.98rem;">${title}</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="left" style="width:200px;">Môn học</th>
+                  <th>TX1</th><th>TX2</th><th>TX3</th><th>TX4</th>
+                  <th>Giữa kì (×2)</th>
+                  <th>Cuối kì (×3)</th>
+                  <th>ĐTB ${semKey === 'hk1' ? 'HK1' : 'HK2'}</th>
+                  ${semKey === 'hk2' && allFinal ? '<th>ĐTB Cả năm</th>' : ''}
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        `;
+      };
+
+      let html = '';
+      if (view === 'hk1') {
+        html = renderSemTable('hk1', '📘 Học kì 1');
+      } else if (view === 'hk2') {
+        html = renderSemTable('hk2', '📗 Học kì 2');
+      } else if (view === 'year') {
+        html = allFinal ? `
+          <h3 style="margin:14px 0 8px; font-size:0.98rem;">🏆 Bảng điểm tổng kết cuối năm (HK2 hệ số 2)</h3>
+          <div class="table-wrap"><table>
+            <thead><tr><th class="left">Môn học</th><th>ĐTB HK1</th><th>ĐTB HK2</th><th>ĐTB Cả năm</th></tr></thead>
+            <tbody>${subjects.map(subName => {
+              const d = peekSubjectData(yr, subName);
+              const a = calcSemester(d.hk1), b = calcSemester(d.hk2), y = calcAnnual(d);
+              return `<tr><td class="left" style="font-weight:700;">${subName}</td><td>${avgPillHTML(a.avg,a.isProvisional)}</td><td>${avgPillHTML(b.avg,b.isProvisional)}</td><td>${avgPillHTML(y.avg,y.isProvisional)}</td></tr>`;
+            }).join('')}</tbody>
+          </table></div>`
+          : '<div class="chart-annotation info">Chưa có thông tin kết quả cuối năm. Bảng tổng kết sẽ hiển thị sau khi hoàn thành và nhập điểm Cuối kì HK2 cho tất cả môn học.</div>';
+      }
+      container.innerHTML = html + '<p style="margin-top:10px; font-size:0.78rem; color:var(--muted);">* ĐTB tạm tính: còn thiếu điểm Giữa kì / Cuối kì hoặc thiếu một học kì.</p>';
+
+      // Mandatory Pass/Fail subjects
+      const pfData = state.passFail[yr] || {};
+      document.getElementById('passFailSubjectsBox').innerHTML = `
+        <h3 style="margin-bottom:8px; font-size:0.95rem;">📌 Các môn học &amp; hoạt động đánh giá Đạt / Chưa đạt</h3>
+        <div class="subjects-mini-grid">
+          ${MANDATORY_PASSFAIL.map(m => {
+            const val = pfData[m] || 'Đạt';
+            return `
+              <div class="sub-mini-card" style="flex-direction:column; align-items:flex-start; gap:6px;">
+                <span style="font-size:0.82rem;">${m}</span>
+                <select class="input" style="width:100%; padding:5px 8px; font-size:0.82rem;" onchange="togglePassFail('${escapeAttr(m)}', this.value)">
+                  <option value="Đạt" ${val === 'Đạt' ? 'selected' : ''}>✔️ Đạt</option>
+                  <option value="Chưa đạt" ${val === 'Chưa đạt' ? 'selected' : ''}>❌ Chưa đạt</option>
+                </select>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    // ==================== PAGE: CHARTS ====================
+    function setBarMode(mode) {
+      state.barMode = mode;
+      saveState();
+      renderChartsPage();
+    }
+
+    const barLabelPlugin = {
+      id: 'barLabelPlugin',
+      afterDatasetsDraw(chart) {
+        const { ctx, data } = chart;
+        const ds = data.datasets[0];
+        if (!ds) return;
+        const flags = ds.provisionalFlags || [];
+        ctx.save();
+        ctx.font = '700 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        chart.getDatasetMeta(0).data.forEach((bar, i) => {
+          const val = ds.data[i];
+          if (val !== null && val !== undefined) {
+            ctx.fillStyle = flags[i] ? '#b45309' : '#1e293b';
+            ctx.fillText(val.toFixed(1) + (flags[i] ? '*' : ''), bar.x, bar.y - 4);
+          }
+        });
+        ctx.restore();
+      }
+    };
+
+    function toggleSubjectChart(idx, button) {
+      const panel = document.getElementById(`subject-panel-${idx}`);
+      const opening = panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', !opening);
+      button.setAttribute('aria-expanded', String(opening));
+      button.lastElementChild.textContent = opening ? '−' : '＋';
+      if (opening) {
+        const existing = lineCharts.find(c => c.canvas && c.canvas.id === `sub-line-${idx}`);
+        if (existing) existing.resize();
+        else renderSingleLineChart(idx);
+      }
+    }
+
+    function renderSingleLineChart(idx) {
+      const subjects = getActiveSubjects(), name = subjects[idx];
+      if (!name || typeof Chart === 'undefined') return;
+      const d = peekSubjectData(state.activeYear, name);
+      const labels = ['TX1','TX2','TX3','TX4','GK','CK','TX1','TX2','TX3','TX4','GK','CK'];
+      const series = [...d.hk1.tx,d.hk1.gk,d.hk1.ck,...d.hk2.tx,d.hk2.gk,d.hk2.ck];
+      const pts = series.filter(isNum);
+      const tight = document.getElementById('zoomToggle').checked;
+      const yMin = tight && pts.length ? Math.max(0,Math.floor(Math.min(...pts)-1)) : 0;
+      const yMax = tight && pts.length ? Math.min(10,Math.ceil(Math.max(...pts)+1)) : 10;
+      const color = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#664930';
+      const chart = new Chart(document.getElementById(`sub-line-${idx}`).getContext('2d'), {
+        type:'line', data:{labels,datasets:[{data:series,borderColor:color,backgroundColor:'rgba(0,0,0,.05)',borderWidth:2.2,tension:.25,fill:true,spanGaps:true,pointRadius:4}]},
+        options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:yMin,max:yMax,ticks:{stepSize:tight?.5:2}},x:{ticks:{font:{size:10}},grid:{display:false}}},plugins:{legend:{display:false}}}
+      });
+      lineCharts.push(chart);
+    }
+
+    function renderChartsPage() {
+      const yr = state.activeYear;
+      const mode = state.barMode || 'year';
+      const subjects = getActiveSubjects();
+
+      document.querySelectorAll('[data-barmode]').forEach(b => b.classList.toggle('active', b.dataset.barmode === mode));
+
+      // 1. Bar chart
+      const values = [];
+      const flags = [];
+      const missingCKNames = [];
+      let hasAny = false;
+
+      subjects.forEach(name => {
+        const d = peekSubjectData(yr, name);
+        const res = mode === 'hk1' ? calcSemester(d.hk1) : mode === 'hk2' ? calcSemester(d.hk2) : calcAnnual(d);
+        values.push(res.avg);
+        if (res.avg !== null) hasAny = true;
+        const isProv = res.avg !== null && res.isProvisional;
+        flags.push(isProv);
+        if (isProv) missingCKNames.push(name);
+      });
+
+      const anno = document.getElementById('barAnnotation');
+      const modeText = mode === 'hk1' ? 'Học kì 1' : mode === 'hk2' ? 'Học kì 2' : 'Cả năm';
+      if (!hasAny) {
+        anno.className = 'chart-annotation info';
+        anno.innerHTML = `<span>ℹ️</span><div>Chưa có điểm cho ${modeText} (Lớp ${yr}). Hãy bấm nút <strong>+</strong> ở góc phải dưới hoặc vào Bảng điểm để nhập.</div>`;
+      } else if (missingCKNames.length > 0) {
+        anno.className = 'chart-annotation warning';
+        anno.innerHTML = `<span>⚠️</span><div><strong>Chú thích biểu đồ (${modeText}):</strong> Các môn <strong>${missingCKNames.join(', ')}</strong> chưa đủ điểm (thiếu Giữa kì/Cuối kì hoặc thiếu học kì) nên cột có dấu <strong>*</strong> là <strong>điểm TẠM TÍNH</strong>.</div>`;
+      } else {
+        anno.className = 'chart-annotation success';
+        anno.innerHTML = `<span>✅</span><div>Tất cả các môn (${modeText}) đã có đủ điểm Cuối kì chính thức.</div>`;
+      }
+
+      if (typeof Chart === 'undefined') {
+        anno.className = 'chart-annotation warning';
+        anno.innerHTML = '<span>⚠️</span><div>Không tải được thư viện biểu đồ (cần Internet). Hãy tải lại trang khi có mạng.</div>';
+      }
+      if (typeof Chart !== 'undefined') {
+        const primaryCss = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#664930';
+        const bgColors = values.map((v, i) => {
+          if (v === null) return 'rgba(148,163,184,0.25)';
+          if (flags[i]) return 'rgba(245, 158, 11, 0.45)';
+          return primaryCss;
+        });
+
+        const ctx = document.getElementById('barChartCanvas').getContext('2d');
+        if (barChart) barChart.destroy();
+        barChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: subjects.map(wrapLabel),
+            datasets: [{
+              label: 'ĐTB',
+              data: values,
+              backgroundColor: bgColors,
+              borderRadius: 8,
+              provisionalFlags: flags
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: { padding: { top: 22 } },
+            scales: {
+              y: { min: 0, max: 10, ticks: { stepSize: 1 } },
+              x: { grid: { display: false } }
+            },
+            plugins: { legend: { display: false } }
+          },
+          plugins: [barLabelPlugin]
+        });
+      }
+
+      // 2. Danh sách biểu đồ dạng thu gọn; chỉ vẽ khi người dùng mở môn
+      const grid = document.getElementById('lineChartsGrid');
+      lineCharts.forEach(c => c && c.destroy());
+      lineCharts = [];
+      grid.innerHTML = subjects.map((name, idx) => {
+        const d = peekSubjectData(yr, name), ann = calcAnnual(d);
+        return `<div>
+          <button class="subject-chart-toggle" type="button" aria-expanded="false" onclick="toggleSubjectChart(${idx}, this)">
+            <span>📈 ${escapeHtml(name)} <small style="font-weight:500;color:var(--muted)"> · ĐTB ${ann.avg === null ? '--' : ann.avg.toFixed(1)}</small></span><span>＋</span>
+          </button>
+          <div class="subject-chart-panel hidden" id="subject-panel-${idx}"><canvas id="sub-line-${idx}"></canvas></div>
+        </div>`;
+      }).join('');
+
+    }
+
+    // ==================== PAGE: TIMETABLE ====================
+    let tkbBlobUrl = null;
+
+    function dataUrlToBlobUrl(dataUrl) {
+      try {
+        const [h, b] = dataUrl.split(',');
+        const mime = (h.match(/:(.*?);/) || [])[1] || 'application/octet-stream';
+        const bin = atob(b), arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        return URL.createObjectURL(new Blob([arr], { type: mime }));
+      } catch { return dataUrl; }
+    }
+
+    function renderTimetablePage() {
+      const yr = state.activeYear;
+      document.getElementById('tkbYearLabel').textContent = `Lớp ${yr}`;
+      const tkb = state.timetables[yr];
+      const emptyEl = document.getElementById('tkbEmptyState');
+      const dispEl = document.getElementById('tkbDisplayBox');
+      const delBtn = document.getElementById('tkbDeleteBtn');
+      if (tkbBlobUrl && tkbBlobUrl.startsWith('blob:')) URL.revokeObjectURL(tkbBlobUrl);
+      tkbBlobUrl = null;
+      emptyEl.classList.toggle('hidden', Boolean(tkb));
+      dispEl.classList.toggle('hidden', !tkb);
+      delBtn.classList.toggle('hidden', !tkb);
+      if (!tkb) { dispEl.innerHTML = ''; return; }
+      tkbBlobUrl = dataUrlToBlobUrl(tkb.dataUrl);
+      const media = (tkb.type || '').includes('pdf')
+        ? `<iframe src="${tkbBlobUrl}" title="Thời khóa biểu" style="width:100%; height:620px; border:1px solid var(--border); border-radius:12px;"></iframe>`
+        : `<img src="${tkbBlobUrl}" alt="Thời khóa biểu" class="tkb-preview" />`;
+      dispEl.innerHTML = media + `<p style="text-align:center; font-size:0.8rem; color:var(--muted); margin-top:10px;">${escapeHtml(tkb.name || '')} • <a href="${tkbBlobUrl}" target="_blank" rel="noopener">Mở toàn màn hình</a></p>`;
+    }
+
+    function handleTimetableUpload(event) {
+      const f = event.target.files[0];
+      event.target.value = '';
+      if (f) processTimetableFile(f);
+    }
+
+    function processTimetableFile(file) {
+      const yr = state.activeYear;
+      const isPdf = file.type === 'application/pdf';
+      if (!isPdf && !file.type.startsWith('image/')) { showToast('Chỉ hỗ trợ ảnh (PNG, JPG…) hoặc file PDF.', 'error'); return; }
+      if (isPdf && file.size > 2.5 * 1024 * 1024) { showToast('File PDF quá lớn (tối đa 2,5 MB). Hãy dùng ảnh hoặc PDF nhẹ hơn.', 'error'); return; }
+      if (state.timetables[yr] && !confirm('Thay thế thời khóa biểu hiện tại bằng file mới?')) return;
+      const commit = (dataUrl, type) => {
+        const prev = state.timetables[yr];
+        state.timetables[yr] = { name: file.name, type, dataUrl };
+        if (!saveState(true)) {
+          state.timetables[yr] = prev; // hoàn tác để bộ nhớ và dữ liệu đã lưu không bị lệch
+          showToast('File quá lớn so với bộ nhớ trình duyệt. Hãy chọn file nhẹ hơn.', 'error');
+        } else {
+          showToast('Đã lưu thời khóa biểu.');
+        }
+        if (state.page === 'timetable') renderTimetablePage();
+      };
+      const reader = new FileReader();
+      reader.onerror = () => showToast('Không đọc được file.', 'error');
+      reader.onload = e => {
+        if (isPdf) { commit(e.target.result, file.type); return; }
+        const img = new Image();
+        img.onerror = () => showToast('Không đọc được ảnh.', 'error');
+        img.onload = () => {
+          const sc = Math.min(1, 1800 / Math.max(img.width, img.height));
+          const c = document.createElement('canvas');
+          c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+          const cx = c.getContext('2d');
+          cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height);
+          cx.drawImage(img, 0, 0, c.width, c.height);
+          commit(c.toDataURL('image/jpeg', 0.85), 'image/jpeg');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function deleteTimetable() {
+      if (!confirm('Xóa thời khóa biểu hiện tại?')) return;
+      state.timetables[state.activeYear] = null;
+      saveState();
+      renderTimetablePage();
+      showToast('Đã xóa thời khóa biểu.');
+    }
+
+    // ==================== PAGE: EXAMS (AUTO STUDY PLAN 1–3 WEEKS) ====================
+    function calcStudyPlan(subjectName, examDateStr, year) {
+      const latest = getLatestScore(year || state.activeYear, subjectName);
+      let daysBefore = 14;
+      let difficulty = 'Chưa có điểm (Mặc định 2 tuần)';
+
+      if (latest !== null) {
+        if (latest < 5.5) {
+          daysBefore = 21;
+          difficulty = `Khó / Cần tập trung (Điểm gần nhất: ${latest}) → Ôn trước 3 tuần`;
+        } else if (latest < 7.0) {
+          daysBefore = 14;
+          difficulty = `Trung bình (Điểm gần nhất: ${latest}) → Ôn trước 2 tuần`;
+        } else if (latest < 8.5) {
+          daysBefore = 10;
+          difficulty = `Khá (Điểm gần nhất: ${latest}) → Ôn trước 10 ngày`;
+        } else {
+          daysBefore = 7;
+          difficulty = `Vững kiến thức (Điểm gần nhất: ${latest}) → Ôn trước 1 tuần`;
+        }
+      }
+
+      const examDate = new Date(examDateStr + 'T00:00:00');
+      const startDate = new Date(examDate);
+      startDate.setDate(startDate.getDate() - daysBefore);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const diffDays = Math.round((examDate - today) / (1000 * 60 * 60 * 24));
+      const inStudyWindow = today >= startDate && today <= examDate;
+
+      return {
+        latest,
+        daysBefore,
+        difficulty,
+        startDateStr: startDate.toLocaleDateString('vi-VN'),
+        examDateStrVN: examDate.toLocaleDateString('vi-VN'),
+        diffDays,
+        inStudyWindow
+      };
+    }
+
+    function openExamModal() {
+      document.getElementById('ex_subject').innerHTML = getActiveSubjects().map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');
+      document.getElementById('ex_title').value = '';
+      const d = new Date();
+      d.setDate(d.getDate() + 14);
+      document.getElementById('ex_date').value = localDateStr(d); // ngày địa phương, không lệch múi giờ như toISOString
+      document.getElementById('ex_time').value = '07:30';
+      document.getElementById('examModal').classList.remove('hidden');
+    }
+
+    function saveNewExam() {
+      const subject = document.getElementById('ex_subject').value;
+      const type = document.getElementById('ex_type').value;
+      const title = document.getElementById('ex_title').value.trim() || `Kiểm tra ${type} ${subject}`;
+      const date = document.getElementById('ex_date').value;
+      const time = document.getElementById('ex_time').value;
+      if (!date) {
+        showToast('Vui lòng chọn ngày kiểm tra!', 'error');
+        return;
+      }
+      state.exams.push({
+        id: Date.now(),
+        year: state.activeYear,
+        subject,
+        type,
+        title,
+        date,
+        time
+      });
+      saveState();
+      closeModal('examModal');
+      renderExamsPage();
+      showToast('Đã thêm lịch kiểm tra.');
+    }
+
+    function deleteExam(id) {
+      if (!confirm('Xóa lịch kiểm tra này?')) return;
+      state.exams = state.exams.filter(e => String(e.id) !== String(id));
+      saveState();
+      renderExamsPage();
+      showToast('Đã xóa lịch kiểm tra.');
+    }
+
+    let examCalendarMonth = new Date().getMonth();
+    let examCalendarYear = new Date().getFullYear();
+    function shiftExamCalendar(delta) {
+      const d = new Date(examCalendarYear, examCalendarMonth + delta, 1);
+      examCalendarMonth = d.getMonth(); examCalendarYear = d.getFullYear();
+      renderExamCalendar(state.activeYear);
+    }
+    function renderExamCalendar(activeYear) {
+      const host = document.getElementById('examCalendar');
+      if (!host) return;
+      const first = new Date(examCalendarYear, examCalendarMonth, 1);
+      const start = new Date(examCalendarYear, examCalendarMonth, 1 - ((first.getDay()+6)%7));
+      const today = new Date(); today.setHours(0,0,0,0);
+      const monthNames = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+      const exams = state.exams.filter(e => e.year === activeYear);
+      const byDate = {};
+      exams.forEach(e => (byDate[e.date] ||= []).push(e));
+      const cells = Array.from({length:42},(_,i)=>{
+        const d = new Date(start); d.setDate(start.getDate()+i);
+        const key = localDateStr(d), same = d.getMonth()===examCalendarMonth;
+        const items = byDate[key] || [];
+        return `<div class="calendar-cell ${same?'':'muted'} ${d.getTime()===today.getTime()?'today':''} ${items.length?'has-exam':''}">
+          <strong>${d.getDate()}</strong>${items.length?`<span class="calendar-dot"></span><small>${items.length} bài</small>`:''}
+        </div>`;
+      }).join('');
+      host.innerHTML = `<div class="calendar-shell">
+        <div class="calendar-head"><button class="btn btn-outline btn-sm" onclick="shiftExamCalendar(-1)">‹</button><strong>🗓️ ${monthNames[examCalendarMonth]} ${examCalendarYear}</strong><button class="btn btn-outline btn-sm" onclick="shiftExamCalendar(1)">›</button></div>
+        <div class="calendar-grid" style="margin-bottom:6px">${['T2','T3','T4','T5','T6','T7','CN'].map(x=>`<div style="text-align:center;font-weight:800;color:var(--muted);font-size:.75rem">${x}</div>`).join('')}</div>
+        <div class="calendar-grid">${cells}</div>
+        <p style="font-size:.78rem;color:var(--muted);margin-top:9px">● Ngày có lịch kiểm tra · Tổng ${exams.length} bài trong năm học lớp ${activeYear}</p>
+      </div>`;
+    }
+
+    function renderExamsPage() {
+      updateExamReminderButton();
+      checkStudyReminders(false);
+      const list = state.exams
+        .filter(e => e.year === state.activeYear)
+        .sort((a, b) => {
+          const t0 = localDateStr(new Date());
+          const pa = a.date < t0, pb = b.date < t0;
+          if (pa !== pb) return pa ? 1 : -1; // sắp tới lên trước, đã qua xuống cuối
+          return (pa ? -1 : 1) * (a.date + (a.time || '')).localeCompare(b.date + (b.time || ''));
+        });
+
+      const container = document.getElementById('examTableContainer');
+      renderExamCalendar(state.activeYear);
+      if (list.length === 0) {
+        container.innerHTML = `<div style="padding:34px; text-align:center; color:var(--muted);">Chưa có lịch kiểm tra nào cho Lớp ${state.activeYear}. Nhấn <strong>+ Thêm lịch kiểm tra</strong> để hệ thống tự lập lịch ôn tập!</div>`;
+        return;
+      }
+
+      container.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th class="left">Môn &amp; Nội dung kiểm tra</th>
+              <th>Loại</th>
+              <th>Thời gian thi</th>
+              <th>Còn lại</th>
+              <th class="left">Lịch ôn tập tự động (1–3 tuần)</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map(ex => {
+              const plan = calcStudyPlan(ex.subject, ex.date, ex.year);
+              const dayTxt = plan.diffDays === 0 ? 'Hôm nay' : plan.diffDays === 1 ? 'Ngày mai' : `Còn ${plan.diffDays} ngày`;
+              const badge = plan.diffDays < 0
+                ? `<span class="pill pill-empty">Đã qua</span>`
+                : plan.inStudyWindow
+                  ? `<span class="pill pill-low">🔥 Đang ôn tập</span>`
+                  : `<span class="pill pill-high">${dayTxt}</span>`;
+
+              return `
+                <tr>
+                  <td class="left">
+                    <strong>${escapeHtml(ex.subject)}</strong>${getActiveSubjects().includes(ex.subject) ? '' : ' <span class="pill pill-empty" title="Môn này không còn trong danh sách môn đang học">đã bỏ môn</span>'}<br>
+                    <span style="font-size:0.8rem; color:var(--muted);">${escapeHtml(ex.title)}</span>
+                  </td>
+                  <td><span class="pill pill-mid">${escapeHtml(ex.type)}</span></td>
+                  <td><strong>${plan.examDateStrVN}</strong>${ex.time ? `<br><small>${ex.time}</small>` : ''}</td>
+                  <td>${badge}</td>
+                  <td class="left">
+                    ${plan.diffDays >= 0 && plan.diffDays < plan.daysBefore ? `<strong>Nên bắt đầu ôn ngay hôm nay</strong> (khuyến nghị ${plan.daysBefore} ngày, chỉ còn ${plan.diffDays} ngày)` : `<strong>Bắt đầu ôn: ${plan.startDateStr}</strong> (${plan.daysBefore} ngày trước thi)`}<br>
+                    <small style="color:var(--muted);">${plan.difficulty}</small>
+                  </td>
+                  <td><button class="btn btn-danger btn-sm" onclick="deleteExam(${ex.id})">Xóa</button></td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // ==================== PAGE: SETTINGS ====================
+    function updateElectiveNote() {
+      const el = document.getElementById('electiveCountNote');
+      if (!el) return;
+      const n = state.settings.electives.length;
+      el.textContent = `Đang chọn ${n} môn lựa chọn → tổng ${MANDATORY_SCORED.length + n} môn tính điểm. Chương trình GDPT 2018 thường chọn 5 môn.`;
+    }
+
+    function renderSettingsPage() {
+      applyTheme();
+      const cloudToggle = document.getElementById('cloudSyncToggle');
+      if (cloudToggle) cloudToggle.checked = state.settings.cloudSync === true;
+      const u = state.user;
+      document.getElementById('settingsProfileTitle').textContent = u.loggedIn ? (u.name || 'Người dùng') : 'Chưa đăng nhập';
+      document.getElementById('settingsProfileSub').textContent = u.loggedIn ? (u.email || 'Hồ sơ học tập StudyTrack') : 'Đăng nhập Google để lấy tên và ảnh đại diện cho hồ sơ.';
+      const avatar = document.getElementById('settingsProfileAvatar');
+      avatar.innerHTML = u.loggedIn && u.avatar ? `<img src="${escapeHtml(u.avatar)}" alt="">` : (u.loggedIn ? escapeHtml((u.name||'U').charAt(0).toUpperCase()) : '?');
+      document.getElementById('settingsProfileAction').innerHTML = `<button class="btn btn-soft" onclick="openSettingsModal('profileSettingsModal')">✏️ Chỉnh sửa</button>${u.loggedIn ? '' : `<button class="google-btn" onclick="startGoogleLogin()">Đăng nhập Google</button>`}`;
+      document.getElementById('set_name').value = state.user.name || '';
+      document.getElementById('set_age').value = state.user.dob || '';
+      document.getElementById('set_examBlock').value = state.settings.examBlock;
+      document.getElementById('set_targetTitle').value = state.settings.targetTitle;
+      document.getElementById('set_alertScore').value = state.settings.alertScore;
+      document.getElementById('set_highScore').value = state.settings.highScore;
+      document.getElementById('set_flucWarn').value = state.settings.flucWarnPct;
+      document.getElementById('logoutBtn').classList.toggle('hidden', !state.user.loggedIn);
+      document.getElementById('settingsElectivesGrid').innerHTML = ELECTIVE_POOL.map(sub => {
+        const checked = state.settings.electives.includes(sub) ? 'checked' : '';
+        return `<label class="check-chip"><input type="checkbox" value="${sub}" ${checked}> ${sub}</label>`;
+      }).join('');
+      updateElectiveNote();
+    }
+
+    function saveSettingsForm() {
+      const name = document.getElementById('set_name').value.trim();
+      const dob = document.getElementById('set_age').value.trim() || null;
+      if (dob && !validDob(dob)) { showToast('Ngày sinh không hợp lệ (tuổi phải từ 12 đến 25).', 'error'); return; }
+      const th = readThresholds('set_alertScore', 'set_highScore', 'set_flucWarn');
+      if (!th) return;
+      state.user.name = name; // để trống thì xóa thật
+      setDob(dob); // chỉ đổi lớp đang xem khi ngày sinh thật sự thay đổi
+      Object.assign(state.settings, th, {
+        examBlock: document.getElementById('set_examBlock').value,
+        targetTitle: document.getElementById('set_targetTitle').value
+      });
+      saveState();
+      ['profileSettingsModal','learningSettingsModal'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+      renderCurrentPage(true);
+      showToast('Đã lưu cài đặt!');
+    }
+
+    async function logout() {
+      if (cloudBusy) return;
+      const cloud = state.settings.cloudSync === true;
+      if (!confirm(cloud ? 'Đăng xuất? Dữ liệu vẫn nằm an toàn trên đám mây; máy này sẽ không còn giữ bảng điểm. Đăng nhập lại để tải về.' : 'Đăng xuất? Bảng điểm và dữ liệu vẫn được giữ trên trình duyệt này.')) return;
+      cloudBusy = true;
+      try {
+        if (cloud && window.stCloud && window.stCloud.isReady()) { // đẩy nốt thay đổi cuối lên mây trước khi xóa khỏi máy
+          let ok = true;
+          try { ok = await window.stCloud.flush(); } catch { ok = false; }
+          if (ok === false && !confirm('Chưa lưu được các thay đổi mới nhất lên đám mây (có thể do mất mạng). Vẫn đăng xuất? Các thay đổi chưa lưu sẽ bị mất.')) return;
+        }
+        if (cloud) { // không để dữ liệu của người này lọt sang tài khoản sau; máy trở về chế độ lưu cục bộ sạch
+          const tt = state.timetables;
+          state = getDefaultState();
+          state.timetables = tt;
+          applyTheme();
+        } else {
+          Object.assign(state.user, { loggedIn: false, name: '', email: '', avatar: '' });
+        }
+        saveState();
+        try { window.stFirebaseSignOut && await window.stFirebaseSignOut(); } catch {}
+        try { google.accounts.id.disableAutoSelect(); } catch {}
+        renderCurrentPage(true);
+        showToast('Đã đăng xuất.');
+      } finally { cloudBusy = false; }
+    }
+
+    function applyElectives(selected) {
+      const sel = ELECTIVE_POOL.filter(x => selected.includes(x));
+      const removed = state.settings.electives.filter(x => !sel.includes(x));
+      state.settings.electives = sel;
+      saveState();
+      updateElectiveNote();
+      return removed;
+    }
+
+    function saveSettingsSubjects() {
+      const selected = [...document.querySelectorAll('#settingsElectivesGrid input:checked')].map(i => i.value);
+      if (selected.length < 2) { showToast('Hãy chọn ít nhất 2 môn lựa chọn.', 'error'); return; }
+      const removed = applyElectives(selected);
+      showToast('Đã cập nhật môn học!' + (removed.length ? ' Điểm của môn đã bỏ vẫn được giữ, bật lại là thấy.' : ''));
+      closeSettingsModal('subjectsSettingsModal');
+    }
+
+    // ==================== FLOATING + QUICK ADD SCORE ====================
+    function openQuickScoreModal() {
+      document.getElementById('qs_year').value = state.activeYear;
+      document.getElementById('qs_sem').value = 'hk1';
+      document.getElementById('qs_col').value = 'tx0';
+      refreshQuickScoreSubjects();
+      document.getElementById('qs_value').value = '';
+      document.getElementById('quickScoreModal').classList.remove('hidden');
+      document.body.classList.add('modal-open');
+      setTimeout(() => document.getElementById('qs_value').focus(), 80);
+    }
+
+    function refreshQuickScoreSubjects() {
+      const sel = document.getElementById('qs_subject');
+      const keep = sel.value;
+      const subs = getActiveSubjects();
+      sel.innerHTML = subs.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');
+      if (subs.includes(keep)) sel.value = keep;
+      updateQuickScoreHint();
+    }
+
+    function qsCurrent() {
+      const yr = document.getElementById('qs_year').value;
+      const sem = document.getElementById('qs_sem').value;
+      const sub = document.getElementById('qs_subject').value;
+      const col = document.getElementById('qs_col').value;
+      const d = peekSubjectData(yr, sub)[sem];
+      const cur = col.startsWith('tx') ? d.tx[Number(col.slice(2))] : d[col];
+      return { yr, sem, sub, col, cur: isNum(cur) ? cur : null };
+    }
+
+    function updateQuickScoreHint() {
+      const el = document.getElementById('qs_hint');
+      if (!el) return;
+      const { cur } = qsCurrent();
+      el.textContent = cur === null ? 'Ô này đang trống.' : `Ô này đang có điểm ${cur} — lưu sẽ ghi đè.`;
+    }
+
+    function submitQuickScore() {
+      const { yr, sem, sub, col, cur } = qsCurrent();
+      const parsed = parseScore(document.getElementById('qs_value').value);
+      if (!parsed.valid) { showToast('Vui lòng nhập điểm hợp lệ từ 0 đến 10!', 'error'); return; }
+      if (parsed.value === null) {
+        if (cur === null) { showToast('Hãy nhập điểm cần lưu.', 'error'); return; }
+        if (!confirm('Xóa điểm đang lưu ở ô này?')) return;
+      }
+      const d = ensureSubjectData(yr, sub);
+      if (col.startsWith('tx')) d[sem].tx[Number(col.slice(2))] = parsed.value;
+      else d[sem][col] = parsed.value;
+      const switched = state.activeYear !== yr;
+      state.activeYear = yr;
+      saveState();
+      maybeAutoPromote();
+      closeModal('quickScoreModal');
+      renderCurrentPage();
+      showToast(parsed.value === null ? 'Đã xóa điểm.' : `Đã lưu ${parsed.value} — ${sub}${switched ? ` (đang xem Lớp ${yr})` : ''}.`);
+    }
+
+    // ==================== DEMO / BACKUP ====================
+    function loadDemoData() {
+      const yr = state.activeYear;
+      if (!confirm(`Điền điểm mẫu sẽ GHI ĐÈ điểm đang có của các môn trong Lớp ${yr}. Tiếp tục?`)) return;
+      const subs = getActiveSubjects();
+      const rand = (min, max) => Math.round((min + Math.random() * (max - min)) * 2) / 2;
+      subs.forEach((name, idx) => {
+        const d = ensureSubjectData(yr, name);
+        const txLen = idx % 3 === 0 ? 3 : 4;
+        d.hk1.tx = [0, 1, 2, 3].map(i => (i < txLen ? rand(6.0, 9.5) : null));
+        d.hk1.gk = rand(6.5, 9.5);
+        d.hk1.ck = rand(6.5, 9.5);
+        d.hk2.tx = [0, 1, 2, 3].map(i => (i < txLen ? rand(6.5, 9.5) : null));
+        d.hk2.gk = rand(6.5, 9.5);
+        d.hk2.ck = idx >= subs.length - 2 ? null : rand(7.0, 9.5);
+      });
+      if (subs[0]) ensureSubjectData(yr, subs[0]).hk1.tx = [5.0, 9.5, 6.0, 9.0];
+      saveState();
+      renderCurrentPage();
+      showToast(`Đã điền điểm mẫu cho Lớp ${yr}.`);
+    }
+
+    function exportJSON() {
+      if (state.settings.cloudSync && window.stCloud && !window.stCloud.isReady()) { showToast('Chưa tải xong dữ liệu từ đám mây nên chưa thể sao lưu.', 'error'); return; }
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `studytrack-thpt-${localDateStr(new Date())}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500); // thu hồi ngay sẽ làm hỏng tải xuống ở một số trình duyệt
+    }
+
+    function importJSON(e) {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onerror = () => showToast('Không đọc được file.', 'error');
+      reader.onload = ev => {
+        let obj;
+        try { obj = JSON.parse(ev.target.result); } catch { showToast('File JSON không hợp lệ!', 'error'); return; }
+        if (!obj || typeof obj !== 'object' || (!obj.grades && !obj.settings)) { showToast('File không đúng định dạng dữ liệu StudyTrack.', 'error'); return; }
+        if (state.settings.cloudSync && window.stCloud && !window.stCloud.isReady()) { showToast('Chưa tải xong dữ liệu từ đám mây nên chưa thể nhập file.', 'error'); return; }
+        if (!confirm('Nhập file sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại. Tiếp tục?')) return;
+        const prev = state;
+        const keepCloud = state.settings.cloudSync === true;
+        state = normalizeState(obj);
+        state.settings.cloudSync = keepCloud; // file sao lưu không được tự bật/tắt đồng bộ
+        if (prev.user.loggedIn) { // file sao lưu không được đổi tài khoản đang đăng nhập hay bắt nhập lại hồ sơ
+          Object.assign(state.user, { loggedIn: true, name: prev.user.name, email: prev.user.email, avatar: prev.user.avatar, onboarded: prev.user.onboarded || state.user.onboarded });
+        }
+        if (!saveState(true)) { state = prev; showToast('Dữ liệu quá lớn so với bộ nhớ trình duyệt.', 'error'); return; }
+        applyTheme();
+        navigate(state.page);
+        showToast('Khôi phục dữ liệu thành công!');
+      };
+      reader.readAsText(file);
+    }
+
+    function resetAllData() {
+      const wasCloud = state.settings.cloudSync === true;
+      if (wasCloud && window.stCloud && !window.stCloud.isReady()) { showToast('Chưa tải xong dữ liệu từ đám mây nên chưa thể đặt lại.', 'error'); return; }
+      if (!confirm(wasCloud ? 'Xóa toàn bộ dữ liệu (kể cả bản trên đám mây), bảng điểm, lịch thi và cài đặt?' : 'Xóa toàn bộ dữ liệu tài khoản, bảng điểm, lịch thi và cài đặt?')) return;
+      const who = { loggedIn: state.user.loggedIn, name: state.user.name, email: state.user.email, avatar: state.user.avatar };
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(TKB_KEY);
+      tkbSig = null;
+      state = getDefaultState();
+      if (wasCloud) { state.settings.cloudSync = true; Object.assign(state.user, who); } // giữ đăng nhập, nếu không dữ liệu mây rỗng sẽ làm máy hiện "chưa đăng nhập"
+      applyTheme();
+      navigate('home');
+      showToast('Đã đặt lại toàn bộ dữ liệu.');
+      if (wasCloud && state.user.loggedIn) openOnboardingModal();
+    }
+
+    async function setCloudSync(enabled) {
+      const toggle = document.getElementById('cloudSyncToggle');
+      const sync = () => { if (toggle) toggle.checked = state.settings.cloudSync === true; };
+      if (cloudBusy || enabled === (state.settings.cloudSync === true)) { sync(); return; }
+      cloudBusy = true;
+      try { await (enabled ? enableCloudSync() : disableCloudSync()); }
+      catch (e) { console.error(e); showToast((e && (e.code || e.message)) || 'Đồng bộ đám mây gặp lỗi.', 'error'); }
+      finally { cloudBusy = false; sync(); }
+    }
+
+    async function enableCloudSync() {
+      if (!state.user.loggedIn) {
+        pendingCloudSync = true;
+        showToast('Hãy đăng nhập Google trước khi bật đồng bộ đám mây.', 'error');
+        startGoogleLogin();
+        return;
+      }
+      const cloud = window.stCloud;
+      if (!cloud) { showToast('Chưa tải được Firebase. Kiểm tra mạng rồi thử lại.', 'error'); return; }
+      const user = await cloud.ensureUser();
+      if (!user) { pendingCloudSync = true; showToast('Hãy đăng nhập bằng nút Google (không nhập thủ công) để bật đồng bộ đám mây.', 'error'); startGoogleLogin(); return; }
+      const ok = confirm('Bật đồng bộ đám mây sẽ XÓA dữ liệu điểm, hồ sơ, cài đặt và lịch thi khỏi bộ nhớ cục bộ của trình duyệt (dữ liệu chỉ còn lưu trên đám mây).\n\nThời khóa biểu sẽ được giữ lại.\n\nBạn đã tải bản sao lưu JSON chưa?\n\nOK = tải bản sao lưu JSON xuống trước, rồi đẩy dữ liệu lên đám mây và đồng bộ liên tục.\nHủy = không bật.');
+      if (!ok) return;
+      exportJSON();
+      const remote = await cloud.peek();
+      let useCloud = false;
+      if (remote && remote.stateJson) {
+        useCloud = confirm('Đám mây đã có dữ liệu của tài khoản này.\n\nOK = dùng dữ liệu trên đám mây (thay dữ liệu trên máy này).\nHủy = ghi đè đám mây bằng dữ liệu trên máy này.');
+      }
+      if (useCloud) {
+        const who = state.user;
+        let parsed; try { parsed = JSON.parse(remote.stateJson); } catch { throw new Error('Dữ liệu trên đám mây bị lỗi định dạng.'); }
+        state = normalizeState(Object.assign({}, parsed, { timetables: state.timetables }));
+        state.user.loggedIn = true;
+        state.user.name = state.user.name || who.name;
+        state.user.email = state.user.email || who.email;
+        state.user.avatar = state.user.avatar || who.avatar;
+      } else if (!(await cloud.pushNow())) {
+        throw new Error('Không ghi được lên đám mây nên dữ liệu trên máy vẫn được giữ nguyên.');
+      }
+      state.settings.cloudSync = true;
+      localStorage.removeItem(STORAGE_KEY + '_cloud');
+      localStorage.removeItem(STORAGE_KEY + '_edited');
+      saveState(true); // sang chế độ đám mây: xóa dữ liệu cục bộ, giữ thời khóa biểu
+      cloud.arm();
+      applyTheme();
+      renderCurrentPage(true);
+      showToast('Đã bật đồng bộ đám mây: dữ liệu lưu trên đám mây và cập nhật liên tục.');
+    }
+
+    async function disableCloudSync() {
+      if (window.stCloud && !window.stCloud.isReady()) { showToast('Chưa tải xong dữ liệu từ đám mây nên chưa thể tắt. Hãy thử lại sau.', 'error'); return; }
+      if (!confirm('Tắt đồng bộ đám mây?\n\nDữ liệu hiện tại sẽ được lưu lại trên trình duyệt này. Đám mây giữ bản cuối cùng nhưng không còn được cập nhật.')) return;
+      try { if (window.stCloud) await window.stCloud.flush(); } catch {}
+      state.settings.cloudSync = false;
+      saveState(); // quay lại lưu cục bộ
+      renderCurrentPage(true);
+      showToast('Đã tắt đồng bộ; dữ liệu được lưu trên máy này.');
+    }
+
+    async function enableExamNotifications() {
+      if (!('Notification' in window)) {
+        showToast('Trình duyệt này không hỗ trợ thông báo nhắc ôn.', 'error');
+        return;
+      }
+      let permission = Notification.permission;
+      if (permission === 'default') permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        state.settings.examNotifications = false;
+        saveState();
+        updateExamReminderButton();
+        showToast('Bạn đã từ chối hoặc chưa cho phép thông báo.', 'error');
+        return;
+      }
+      state.settings.examNotifications = true;
+      saveState();
+      updateExamReminderButton();
+      showToast('Đã bật thông báo nhắc ôn lịch kiểm tra.');
+      checkStudyReminders(true);
+    }
+
+    function updateExamReminderButton() {
+      const btn = document.getElementById('examReminderBtn');
+      if (!btn) return;
+      const enabled = state.settings.examNotifications && 'Notification' in window && Notification.permission === 'granted';
+      btn.textContent = enabled ? '🔕 Tắt nhắc ôn' : '🔔 Bật nhắc ôn';
+      btn.onclick = enabled ? disableExamNotifications : enableExamNotifications;
+    }
+
+    function disableExamNotifications() {
+      state.settings.examNotifications = false;
+      saveState();
+      updateExamReminderButton();
+      showToast('Đã tắt thông báo nhắc ôn.');
+    }
+
+    function checkStudyReminders(force) {
+      if (!state.settings.examNotifications || !('Notification' in window) || Notification.permission !== 'granted') return;
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      state.exams
+        .filter(ex => ex.year === state.activeYear)
+        .forEach(ex => {
+          const plan = calcStudyPlan(ex.subject, ex.date, ex.year);
+          if (plan.diffDays < 0 || !plan.inStudyWindow) return;
+          const key = `studytrack_reminder_${ex.id}_${ex.date}_${plan.daysBefore}`;
+          if (!force && localStorage.getItem(key)) return;
+          const message = plan.diffDays === 0
+            ? `Hôm nay là lịch kiểm tra ${ex.subject}.`
+            : `Đã đến lịch ôn ${ex.subject}; còn ${plan.diffDays} ngày đến kiểm tra.`;
+          try { new Notification('StudyTrack - Nhắc ôn tập', { body: message, tag: key }); } catch { showToast('🔔 ' + message); }
+          localStorage.setItem(key, '1');
+        });
+    }
+
+    // ==================== HELPERS & INIT ====================
+    function openSettingsModal(id) {
+      const modal = document.getElementById(id);
+      if (!modal) return;
+      renderSettingsPage();
+      modal.classList.remove('hidden');
+    }
+
+    function closeSettingsModal(id) {
+      document.getElementById(id)?.classList.add('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+      if (!document.querySelector('.modal-backdrop:not(.hidden)')) document.body.classList.remove('modal-open');
+    }
+
+    function slugify(str) {
+      return String(str).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function escapeAttr(s) {
+      return escapeHtml(String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+    }
+
+    function renderCurrentPage(force) {
+      document.querySelectorAll('[data-yr]').forEach(b => b.classList.toggle('active', b.dataset.yr === state.activeYear));
+      renderTopUser();
+      if (state.page === 'home') renderHomePage();
+      else if (state.page === 'grades') renderGradebookPage();
+      else if (state.page === 'charts') renderChartsPage();
+      else if (state.page === 'timetable') renderTimetablePage();
+      else if (state.page === 'exams') renderExamsPage();
+      else if (state.page === 'settings' && force) renderSettingsPage(); // không xóa dữ liệu đang gõ dở khi đổi năm học
+    }
+
+    // Init App
+    applyTheme();
+    renderTopUser();
+    maybeAutoPromote();
+    navigate(state.page || 'home');
+    if (state.user.loggedIn && !state.user.onboarded) openOnboardingModal();
+    setCloudLoading(cloudLoading); // máy ở chế độ đám mây: hiện "đang tải" thay vì giao diện trống / hồ sơ trống
+    if (cloudLoading) setTimeout(() => { if (cloudLoading) { setCloudLoading(false); showToast('Tải dữ liệu từ đám mây quá lâu. Kiểm tra mạng rồi tải lại trang.', 'error'); } }, 20000);
+    if ('IntersectionObserver' in window) {
+      const adviceObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          const list = entry.target.querySelector('.advice-list');
+          if (list && !list.classList.contains('advice-reveal-run')) list.classList.add('advice-reveal-run');
+        });
+      }, { threshold: 0.25 });
+      const adviceBox = document.querySelector('.advice-box');
+      if (adviceBox) adviceObserver.observe(adviceBox);
+    }
+    checkStudyReminders(false);
+
+    window.addEventListener('load', onGisLoaded); // chờ thư viện Google tải xong rồi mới vẽ nút
+
+    // Khóa cuộn nền khi có hộp thoại mở
+    const modalObserver = new MutationObserver(() =>
+      document.body.classList.toggle('modal-open', Boolean(document.querySelector('.modal-backdrop:not(.hidden)'))));
+    document.querySelectorAll('.modal-backdrop').forEach(m => modalObserver.observe(m, { attributes: true, attributeFilter: ['class'] }));
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-backdrop:not(.hidden)').forEach(m => {
+          if (m.id !== 'onboardingModal' || state.user.onboarded) closeModal(m.id);
+        });
+        toggleSidebar(false);
+      } else if (e.key === 'Enter' && e.target.id === 'qs_value') {
+        e.preventDefault();
+        submitQuickScore();
+      }
+    });
+
+    // Bỏ chọn môn lựa chọn: áp dụng ngay, không cần bấm thêm nút
+    document.getElementById('settingsElectivesGrid').addEventListener('change', e => {
+      if (e.target.type !== 'checkbox') return;
+      const selected = [...document.querySelectorAll('#settingsElectivesGrid input:checked')].map(i => i.value);
+      if (selected.length < 2) { e.target.checked = true; showToast('Cần giữ ít nhất 2 môn lựa chọn.', 'error'); return; }
+      applyElectives(selected);
+    });
+
+    // Kéo thả & bàn phím cho vùng tải thời khóa biểu
+    const dz = document.getElementById('tkbEmptyState');
+    ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.style.borderColor = 'var(--primary)'; }));
+    ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.style.borderColor = ''; }));
+    dz.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) processTimetableFile(f); });
+    dz.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById('tkbInput').click(); } });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') checkStudyReminders(false);
+    });
+
+    // Đồng bộ giữa nhiều tab (không ghi lại để tránh vòng lặp)
+    window.addEventListener('storage', e => {
+      if (e.key === MODE_KEY && (e.newValue === 'cloud') !== (state.settings.cloudSync === true)) { location.reload(); return; } // tab khác đã đổi chế độ lưu
+      if ((e.key !== STORAGE_KEY && e.key !== TKB_KEY) || !e.newValue) return;
+      if (state.settings.cloudSync) { // chế độ đám mây: chỉ cập nhật thời khóa biểu; nạp lại state sẽ ghi đè dữ liệu mây bằng bản rỗng
+        if (e.key === TKB_KEY) { try { state.timetables = normalizeState({ timetables: JSON.parse(e.newValue) }).timetables; if (state.page === 'timetable') renderTimetablePage(); } catch {} }
+        return;
+      }
+      const a = document.activeElement;
+      if (a && ['INPUT', 'SELECT', 'TEXTAREA'].includes(a.tagName)) return;
+      try {
+        const page = state.page;
+        state = loadState();
+        state.page = page;
+        applyTheme();
+        renderCurrentPage(true);
+      } catch {}
+    });
+  </script>
+<!-- Firebase (bản compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+(function () {
+  if (typeof firebase === 'undefined') {
+    console.warn('Không tải được Firebase: app chỉ lưu trên máy này.');
+    try { if (state.settings.cloudSync) showToast('Không tải được Firebase nên chưa truy cập được dữ liệu trên đám mây. Kiểm tra mạng rồi tải lại trang.', 'error'); } catch {}
+    try { setCloudLoading(false); } catch {}
+    return;
+  }
+  firebase.initializeApp({
+    apiKey: "AIzaSyDXP1tY0o8aEuJMowmcFO9nebgqvfwqAZw",
+    authDomain: "studytrack-a19ec.firebaseapp.com",
+    projectId: "studytrack-a19ec",
+    storageBucket: "studytrack-a19ec.firebasestorage.app",
+    messagingSenderId: "85849431886",
+    appId: "1:85849431886:web:437276fe24a3a4c683481f",
+    measurementId: "G-NSQG82MZZ9"
+  });
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const MAX_BYTES = 900000; // Firestore giới hạn 1 MiB / document
+  let ready = false, pushTimer = null, inflight = 0, lastWarn = 0;
+  let knownRemoteAt = 0, stale = false; // phiên bản mây lần cuối mà máy này đã thấy; stale = thiết bị khác đã ghi mới hơn
+  // ready = đã tải xong dữ liệu từ mây; chưa ready thì tuyệt đối không đẩy gì lên (tránh ghi đè bằng dữ liệu rỗng)
+  let rcPromise = null, rcUid = null;
+  let explicitLogin = false; // true khi người dùng vừa chủ động đăng nhập Google (khác với tự khôi phục phiên khi mở lại trang)
+  let authFirstDone; const authFirst = new Promise(r => { authFirstDone = r; });
+
+  const warn = msg => { const n = Date.now(); if (n - lastWarn > 4000) { lastWarn = n; showToast(msg, 'error'); } };
+  const docRef = u => db.collection('users').doc(u.uid);
+  const slim = () => { const { timetables, ...rest } = state; return JSON.stringify(rest); }; // không gửi ảnh thời khóa biểu
+
+  async function push(user) {
+    if (stale) { warn('Đám mây có dữ liệu mới hơn từ thiết bị khác nên chưa lưu thay đổi này. Hãy xuất JSON nếu cần giữ, rồi tải lại trang.'); return false; }
+    const json = slim();
+    if (new Blob([json]).size > MAX_BYTES) { warn('Dữ liệu quá lớn để đồng bộ lên mây.'); return false; }
+    inflight++;
+    const next = Math.max(Date.now(), knownRemoteAt + 1);
+    try {
+      const ref = docRef(user);
+      await db.runTransaction(async tx => {
+        const snap = await tx.get(ref);
+        const cur = snap.exists ? (Number(snap.data().clientUpdatedAt) || 0) : 0;
+        if (snap.exists && cur !== knownRemoteAt) { const err = new Error('conflict'); err.code = 'st-conflict'; throw err; }
+        tx.set(ref, {
+          email: user.email || '', displayName: user.displayName || '',
+          stateJson: json, clientUpdatedAt: next,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      });
+      knownRemoteAt = next;
+      return true;
+    } catch (e) {
+      if (e && e.code === 'st-conflict') {
+        stale = true;
+        console.warn('Xung đột đồng bộ: đám mây đã được thiết bị khác cập nhật.');
+        warn('Đám mây vừa được thiết bị khác cập nhật nên thay đổi này chưa được lưu. Hãy xuất JSON nếu cần giữ, rồi tải lại trang để lấy bản mới nhất.');
+        return false;
+      }
+      console.error('Lỗi đồng bộ lên mây:', e);
+      warn('Không lưu được lên mây (' + (e.code || e.message) + ').');
+      return false;
+    } finally { inflight--; }
+  }
+
+  function pull(data, user) {
+    let parsed;
+    try { parsed = JSON.parse(data.stateJson); } catch { throw new Error('dữ liệu đám mây bị lỗi định dạng'); }
+    const page = state.page;
+    state = normalizeState(Object.assign({}, parsed, { timetables: state.timetables }));
+    state.settings.cloudSync = true;
+    state.user.loggedIn = true; // đã có phiên Firebase hợp lệ thì chắc chắn là đã đăng nhập
+    if (!state.user.email && user.email) state.user.email = user.email;
+    if (!state.user.name && user.displayName) state.user.name = user.displayName;
+    if (!state.user.avatar && user.photoURL) state.user.avatar = user.photoURL;
+    state.page = page;
+    applyTheme();
+    renderCurrentPage(true);
+    if (state.user.onboarded) closeModal('onboardingModal');
+  }
+
+  // Trả về {status}: pulled | pushed | none | declined | error
+  async function reconcile(user) {
+    if (ready && pushTimer) { clearTimeout(pushTimer); pushTimer = null; await push(user); } // thay đổi chưa kịp lên mây thì đẩy trước, đừng bị bản mây đè
+    ready = false;
+    // Chế độ lưu trên máy: chỉ kiểm tra mây khi người dùng vừa chủ động đăng nhập (mở lại trang thì để yên, tôn trọng việc đã tắt đồng bộ)
+    if (!state.settings.cloudSync && !explicitLogin) return { status: 'none' };
+    let data = null;
+    try {
+      const snap = await docRef(user).get();
+      data = snap.exists && snap.data().stateJson ? snap.data() : null;
+      knownRemoteAt = snap.exists ? (Number(snap.data().clientUpdatedAt) || 0) : 0;
+      stale = false;
+    } catch (e) {
+      console.error('Lỗi đọc dữ liệu từ mây:', e);
+      warn('Không tải được dữ liệu từ đám mây (' + (e.code || e.message) + '). Hãy kiểm tra mạng rồi thử lại.');
+      return { status: 'error' };
+    }
+    try {
+      if (state.settings.cloudSync) { // chế độ đám mây: luôn lấy từ mây; mây chưa có gì thì đẩy bản hiện tại lên
+        if (data) pull(data, user);
+        else if (!(await push(user))) return { status: 'error' };
+        ready = true;
+        try { window.stAfterCloudLoad && window.stAfterCloudLoad(); } catch (e) { console.error(e); }
+        return { status: data ? 'pulled' : 'pushed' };
+      }
+      // Chế độ cục bộ + vừa đăng nhập + tài khoản đã có dữ liệu trên mây (vd. điện thoại mới) → tải về, không bắt nhập lại
+      if (!data || !window.stAdoptCloud) return { status: 'none' };
+      if (!(await window.stAdoptCloud(data, user))) return { status: 'declined' };
+      ready = true;
+      try { window.stAfterCloudLoad && window.stAfterCloudLoad(); } catch (e) { console.error(e); }
+      return { status: 'pulled' };
+    } catch (e) {
+      console.error('Lỗi áp dụng dữ liệu từ mây:', e);
+      warn('Không đọc được dữ liệu trên đám mây (' + (e.message || e.code) + ').');
+      return { status: 'error' };
+    }
+  }
+
+  // Gộp các lần gọi trùng (đăng nhập + sự kiện onAuthStateChanged) thành một lượt
+  function reconcileOnce(user) {
+    if (rcPromise && rcUid === user.uid) return rcPromise;
+    rcUid = user.uid;
+    const p = reconcile(user).finally(() => { if (rcPromise === p) { rcPromise = null; rcUid = null; } });
+    rcPromise = p;
+    return p;
+  }
+
+  window.stCloud = {
+    isReady: () => ready,
+    arm: () => { ready = true; },
+    // Chỉ trả về người dùng đang có phiên; KHÔNG tự mở popup (bị trình duyệt điện thoại chặn). Chưa có phiên thì app yêu cầu đăng nhập bằng nút Google
+    ensureUser: async () => {
+      if (auth.currentUser) return auth.currentUser;
+      await Promise.race([authFirst, new Promise(r => setTimeout(r, 4000))]);
+      return auth.currentUser;
+    },
+    peek: async () => { const u = auth.currentUser; if (!u) return null; const s = await docRef(u).get(); knownRemoteAt = s.exists ? (Number(s.data().clientUpdatedAt) || 0) : 0; stale = false; return s.exists ? s.data() : null; },
+    pushNow: () => { const u = auth.currentUser; return u ? push(u) : Promise.resolve(false); },
+    // true = đã lưu xong (hoặc không có gì để lưu); false = đẩy lên mây thất bại
+    flush: async () => { clearTimeout(pushTimer); pushTimer = null; const u = auth.currentUser; if (u && ready) return await push(u); return true; }
+  };
+
+  // app gọi sau mỗi lần saveState()
+  window.stCloudTouch = function () {
+    const u = auth.currentUser;
+    if (!state.settings.cloudSync || !u || !ready) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(() => { pushTimer = null; push(u); }, 800);
+  };
+
+  // Gọi khi người dùng chủ động đăng nhập Google; chờ kiểm tra/tải dữ liệu mây xong mới trả về
+  window.stFirebaseSignIn = async function (idToken, profile) {
+    explicitLogin = true;
+    try {
+      let user = auth.currentUser;
+      if (!user || (profile && profile.email && user.email !== profile.email)) {
+        const cred = await auth.signInWithCredential(firebase.auth.GoogleAuthProvider.credential(idToken));
+        user = cred.user;
+      }
+      return await reconcileOnce(user);
+    } catch (e) {
+      console.error('Lỗi đăng nhập Firebase:', e);
+      warn('Đăng nhập Firebase lỗi (' + (e.code || e.message) + '). Kiểm tra Client ID và Authorized domains trong Firebase Console.');
+      return { status: 'error' };
+    } finally { explicitLogin = false; }
+  };
+
+  // Gọi sau khi app đã đẩy thay đổi cuối và chuyển state về chế độ cục bộ
+  window.stFirebaseSignOut = function () {
+    clearTimeout(pushTimer); pushTimer = null;
+    ready = false; rcPromise = null; rcUid = null; knownRemoteAt = 0; stale = false;
+    return auth.signOut();
+  };
+
+  auth.onAuthStateChanged(user => {
+    authFirstDone();
+    if (user) {
+      reconcileOnce(user).then(res => { if (res && res.status === 'error' && cloudLoading) { try { setCloudLoading(false); } catch {} } });
+    } else {
+      clearTimeout(pushTimer); pushTimer = null;
+      ready = false; rcPromise = null; rcUid = null;
+      try { window.stOnNoSession && window.stOnNoSession(); } catch {}
+    }
+  });
+
+  // Điện thoại hay đóng/ẩn tab đột ngột: đẩy ngay thay đổi đang chờ
+  const flushNow = () => {
+    const u = auth.currentUser;
+    if (pushTimer && u && ready && state.settings.cloudSync) { clearTimeout(pushTimer); pushTimer = null; push(u); }
+  };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushNow(); });
+  window.addEventListener('pagehide', flushNow);
+  // đang có thay đổi chưa kịp lên mây mà đóng tab: cảnh báo (chế độ đám mây không giữ bản trên máy)
+  window.addEventListener('beforeunload', e => { if (state.settings.cloudSync && (pushTimer || inflight)) { e.preventDefault(); e.returnValue = ''; } });
+})();
+</script>
+
+</body>
+</html>
